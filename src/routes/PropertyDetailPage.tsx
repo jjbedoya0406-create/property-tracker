@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
+import { ExpensesSection } from "../features/expenses/ExpensesSection";
 import { PropertyForm } from "../features/properties/PropertyForm";
 import {
   useProperties,
@@ -83,12 +84,7 @@ export function PropertyDetailPage() {
         </>
       )}
 
-      <section>
-        <h2>Expenses</h2>
-        {/* Outcome 3 (capture flow) not built yet — this is the required
-            empty state ahead of that, per PRD Story 2.2. */}
-        <p>No expenses yet.</p>
-      </section>
+      <ExpensesSection propertyId={property.propertyId} />
     </div>
   );
 }

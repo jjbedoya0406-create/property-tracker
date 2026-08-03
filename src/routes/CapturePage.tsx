@@ -1,11 +1,18 @@
-// Placeholder — Outcome 3 feature implementation (camera capture, OCR,
-// confirm screen, manual entry fallback) comes in a later pass, not part of
-// scaffolding.
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { ExpenseForm } from "../features/expenses/ExpenseForm";
+
 export function CapturePage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const initialPropertyId = searchParams.get("propertyId") ?? undefined;
+
   return (
     <div>
       <h1>Capture Receipt</h1>
-      <p>Capture flow goes here.</p>
+      <ExpenseForm
+        initialPropertyId={initialPropertyId}
+        onSaved={(propertyId) => navigate(`/properties/${propertyId}`)}
+      />
     </div>
   );
 }

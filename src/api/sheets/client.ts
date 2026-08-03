@@ -36,7 +36,9 @@ export function getValues(
   spreadsheetId: string,
   range: string,
 ): Promise<ValueRange> {
-  const url = `${SHEETS_BASE}/${spreadsheetId}/values/${encodeURIComponent(range)}`;
+  // UNFORMATTED_VALUE avoids locale-formatted strings (e.g. "1,234.56") for
+  // numeric columns like Expenses.amount — return raw numbers instead.
+  const url = `${SHEETS_BASE}/${spreadsheetId}/values/${encodeURIComponent(range)}?valueRenderOption=UNFORMATTED_VALUE`;
   return authorizedFetchJson<ValueRange>(accessToken, url);
 }
 
