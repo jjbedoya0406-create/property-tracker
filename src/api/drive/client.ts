@@ -38,6 +38,24 @@ export async function uploadFile(
   return response.json() as Promise<DriveFile>;
 }
 
+// Looks up a file this app previously created (drive.file scope only sees
+// app-created files, so this is inherently scoped to "our" files, not the
+// user's whole Drive).
+export async function findFileByName(
+  accessToken: string,
+  name: string,
+  mimeType: string,
+): Promise<DriveFile | null> {
+  const escapedName = name.replace(/'/g, "\\'");
+  const q = `name='${escapedName}' and mimeType='${mimeType}' and trashed=false`;
+  const url = `${DRIVE_BASE}?q=${encodeURIComponent(q)}&fields=files(id,name,webViewLink)&spaces=drive`;
+  const { files } = await authorizedFetchJson<{ files: DriveFile[] }>(
+    accessToken,
+    url,
+  );
+  return files[0] ?? null;
+}
+
 export function getFile(
   accessToken: string,
   fileId: string,
