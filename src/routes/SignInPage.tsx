@@ -1,14 +1,10 @@
 import { Navigate } from "react-router-dom";
 import { AlertCircle } from "lucide-react";
+import { StampIcon } from "@/components/StampIcon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { useAuth } from "../auth";
 
 export function SignInPage() {
@@ -19,15 +15,14 @@ export function SignInPage() {
   }
 
   return (
-    <div className="flex justify-center py-8">
+    <div className="flex flex-1 items-center justify-center">
       <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-xl">Property Expense Tracker</CardTitle>
+        <CardContent className="flex flex-col items-center gap-4 text-center">
+          <StampIcon size={44} />
           <CardDescription>
             Sign in to view and manage your portfolio.
           </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+          <Separator />
           <Button className="w-full" onClick={signIn} disabled={isSigningIn}>
             {isSigningIn ? "Signing in…" : "Sign in with Google"}
           </Button>

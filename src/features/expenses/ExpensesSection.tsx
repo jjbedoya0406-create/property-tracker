@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoggedStamp } from "@/components/LoggedStamp";
+import { toDisplayCase } from "@/lib/text";
 import { useExpenses } from "./hooks";
 
 interface ExpensesSectionProps {
@@ -111,11 +112,18 @@ export function ExpensesSection({ propertyId }: ExpensesSectionProps) {
                     key={expense.expenseId}
                     className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
                   >
-                    <div className="flex flex-col">
-                      <span className="font-medium">{expense.vendor}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {expense.date} · {expense.category}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium">
+                        {toDisplayCase(expense.vendor)}
                       </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">
+                          {expense.date}
+                        </span>
+                        <span className="rounded-[6px] bg-category-pill px-2 py-0.5 text-[11px] text-category-pill-foreground">
+                          {expense.category}
+                        </span>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {expense.expenseId === justLoggedExpenseId && (

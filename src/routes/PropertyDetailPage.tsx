@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Navigate, useParams } from "react-router-dom";
-import { AlertCircle } from "lucide-react";
+import { Link, Navigate, useParams } from "react-router-dom";
+import { AlertCircle, ChevronLeft } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,14 @@ export function PropertyDetailPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <Link
+        to="/properties"
+        className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ChevronLeft className="size-4" />
+        My properties
+      </Link>
+
       <Card>
         <CardContent>
           {isEditing ? (

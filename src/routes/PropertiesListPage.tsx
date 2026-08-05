@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, ChevronRight } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -63,7 +63,9 @@ export function PropertiesListPage() {
             <p className="text-muted-foreground">
               No properties yet — add your first one to get started.
             </p>
-            <Button onClick={() => setShowAddForm(true)}>Add property</Button>
+            <Button variant="outline" onClick={() => setShowAddForm(true)}>
+              Add property
+            </Button>
           </CardContent>
         </Card>
       )}
@@ -89,6 +91,7 @@ export function PropertiesListPage() {
                       {property.status === "archived" && (
                         <Badge variant="secondary">Archived</Badge>
                       )}
+                      <ChevronRight className="size-4 text-muted-foreground" />
                     </div>
                   </Link>
                 ))}
@@ -97,7 +100,11 @@ export function PropertiesListPage() {
           )}
 
           {!showAddForm && (
-            <Button className="self-start" onClick={() => setShowAddForm(true)}>
+            <Button
+              variant="outline"
+              className="self-start"
+              onClick={() => setShowAddForm(true)}
+            >
               Add property
             </Button>
           )}

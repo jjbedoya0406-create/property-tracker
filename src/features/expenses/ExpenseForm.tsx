@@ -4,6 +4,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toDisplayCase } from "@/lib/text";
 import {
   Select,
   SelectContent,
@@ -57,7 +58,7 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
     try {
       const text = await recognizeReceiptText(file);
       const guess = extractGuessesFromText(text);
-      if (guess.vendor) setVendor(guess.vendor);
+      if (guess.vendor) setVendor(toDisplayCase(guess.vendor));
       if (guess.amount !== undefined) setAmount(String(guess.amount));
       if (guess.date) setDate(guess.date);
     } catch {

@@ -1,6 +1,8 @@
 import { useQueryClient } from "@tanstack/react-query";
+import { Camera } from "lucide-react";
 import { Link, Outlet } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { StampIcon } from "@/components/StampIcon";
 import { useAuth } from "../auth";
 
 export function Layout() {
@@ -15,28 +17,36 @@ export function Layout() {
   }
 
   return (
-    <div className="min-h-svh bg-background">
+    <div className="flex min-h-svh flex-col bg-background">
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <Link
-            to="/properties"
-            className="text-lg font-medium text-foreground"
-          >
-            Property Expense Tracker
+          <Link to="/properties" className="flex items-center gap-2">
+            <StampIcon />
+            <span className="text-[13px] font-medium text-foreground">
+              Property expense tracker
+            </span>
           </Link>
           {isSignedIn && (
             <nav className="flex items-center gap-2">
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/capture">Capture receipt</Link>
+              <Button asChild size="sm">
+                <Link to="/capture">
+                  <Camera className="size-4" />
+                  Capture receipt
+                </Link>
               </Button>
-              <Button variant="outline" size="sm" onClick={handleSignOut}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-muted-foreground"
+                onClick={handleSignOut}
+              >
                 Sign out
               </Button>
             </nav>
           )}
         </div>
       </header>
-      <main className="mx-auto max-w-2xl px-4 py-6">
+      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-6">
         <Outlet />
       </main>
     </div>

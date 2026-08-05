@@ -19,6 +19,11 @@
   --action-hover: #25401f;
   --stamp: #2b3a55;
   --error: #a13d2f;
+  /* Category pill (UI_Polish_Handoff_v1.md, screen 3) — distinct from the
+     general --muted/--secondary tokens since it's a specific called-out
+     color pairing, not part of the base ledger palette. */
+  --category-pill: #e3e9df;
+  --category-pill-foreground: #3c5240;
 
   /* shadcn/ui's expected token names, mapped onto the ledger palette above
      so every generated component (button, input, card, ...) inherits it
@@ -78,6 +83,8 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-stamp: var(--stamp);
+  --color-category-pill: var(--category-pill);
+  --color-category-pill-foreground: var(--category-pill-foreground);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
