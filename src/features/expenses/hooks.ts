@@ -28,7 +28,7 @@ interface CreateExpenseWithReceiptInput {
   amount: number;
   date: string;
   category: Category;
-  photo: File | null;
+  photo: Blob | null;
 }
 
 export function useCreateExpenseWithReceipt() {

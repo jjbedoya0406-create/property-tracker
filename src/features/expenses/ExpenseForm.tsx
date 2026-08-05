@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { useProperties } from "../properties/hooks";
 import { useCreateExpenseWithReceipt } from "./hooks";
+import { normalizeImageForOcr } from "./imagePreprocessing";
 import { extractGuessesFromText, recognizeReceiptText } from "./ocr";
 import { ReceiptCaptureInput } from "./ReceiptCaptureInput";
 import { expenseInputSchema } from "./schema";
@@ -29,7 +30,7 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
   const createExpense = useCreateExpenseWithReceipt();
 
   const [propertyId, setPropertyId] = useState(initialPropertyId ?? "");
-  const [photo, setPhoto] = useState<File | null>(null);
+  const [photo, setPhoto] = useState<Blob | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
   const [isRunningOcr, setIsRunningOcr] = useState(false);
   const [vendor, setVendor] = useState("");
@@ -52,11 +53,25 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
   );
 
   async function handleCapture(file: File) {
-    setPhoto(file);
-    setPhotoPreviewUrl(URL.createObjectURL(file));
     setIsRunningOcr(true);
+
+    // Phone photos carry EXIF rotation + very high resolution, which can
+    // make Tesseract read a sideways image and produce garbage text even
+    // though the preview (which respects EXIF) looks correctly oriented.
+    // Normalize once and reuse the same image for preview, OCR, and the
+    // eventual Drive upload. Fall back to the raw file if this fails for
+    // any reason — capture should never dead-end on a preprocessing bug.
+    let normalized: Blob = file;
     try {
-      const text = await recognizeReceiptText(file);
+      normalized = await normalizeImageForOcr(file);
+    } catch {
+      // Fall through with the raw file.
+    }
+    setPhoto(normalized);
+    setPhotoPreviewUrl(URL.createObjectURL(normalized));
+
+    try {
+      const text = await recognizeReceiptText(normalized);
       const guess = extractGuessesFromText(text);
       if (guess.vendor) setVendor(toDisplayCase(guess.vendor));
       if (guess.amount !== undefined) setAmount(String(guess.amount));
