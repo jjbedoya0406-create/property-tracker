@@ -1,5 +1,10 @@
 import { useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { ExpensesSection } from "../features/expenses/ExpensesSection";
 import { PropertyForm } from "../features/properties/PropertyForm";
 import {
@@ -16,14 +21,17 @@ export function PropertyDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
 
   if (isPending) {
-    return <p>Loading…</p>;
+    return <p className="text-muted-foreground">Loading…</p>;
   }
 
   if (isError) {
     return (
-      <p role="alert">
-        {error instanceof Error ? error.message : "Failed to load property."}
-      </p>
+      <Alert variant="destructive">
+        <AlertCircle />
+        <AlertDescription>
+          {error instanceof Error ? error.message : "Failed to load property."}
+        </AlertDescription>
+      </Alert>
     );
   }
 
@@ -34,55 +42,80 @@ export function PropertyDetailPage() {
   }
 
   return (
-    <div>
-      {isEditing ? (
-        <PropertyForm
-          initialValues={{ name: property.name, address: property.address }}
-          submitLabel="Save"
-          isSubmitting={updateProperty.isPending}
-          onSubmit={(input) => {
-            updateProperty.mutate(
-              { ...property, name: input.name, address: input.address },
-              { onSuccess: () => setIsEditing(false) },
-            );
-          }}
-          onCancel={() => setIsEditing(false)}
-        />
-      ) : (
-        <>
-          <h1>{property.name}</h1>
-          {property.address && <p>{property.address}</p>}
-          {property.status === "archived" && (
-            <p>
-              <em>Archived</em>
-            </p>
-          )}
-          <button type="button" onClick={() => setIsEditing(true)}>
-            Edit
-          </button>
-          {property.status === "active" ? (
-            <button
-              type="button"
-              disabled={setPropertyStatus.isPending}
-              onClick={() =>
-                setPropertyStatus.mutate({ property, status: "archived" })
-              }
-            >
-              Archive
-            </button>
+    <div className="flex flex-col gap-6">
+      <Card>
+        <CardContent>
+          {isEditing ? (
+            <PropertyForm
+              initialValues={{
+                name: property.name,
+                address: property.address,
+              }}
+              submitLabel="Save changes"
+              isSubmitting={updateProperty.isPending}
+              onSubmit={(input) => {
+                updateProperty.mutate(
+                  { ...property, name: input.name, address: input.address },
+                  { onSuccess: () => setIsEditing(false) },
+                );
+              }}
+              onCancel={() => setIsEditing(false)}
+            />
           ) : (
-            <button
-              type="button"
-              disabled={setPropertyStatus.isPending}
-              onClick={() =>
-                setPropertyStatus.mutate({ property, status: "active" })
-              }
-            >
-              Unarchive
-            </button>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h1 className="text-xl font-medium">{property.name}</h1>
+                  {property.address && (
+                    <p className="text-muted-foreground">{property.address}</p>
+                  )}
+                </div>
+                {property.status === "archived" && (
+                  <Badge variant="secondary">Archived</Badge>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditing(true)}
+                >
+                  Edit
+                </Button>
+                {property.status === "active" ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={setPropertyStatus.isPending}
+                    onClick={() =>
+                      setPropertyStatus.mutate({
+                        property,
+                        status: "archived",
+                      })
+                    }
+                  >
+                    Archive
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={setPropertyStatus.isPending}
+                    onClick={() =>
+                      setPropertyStatus.mutate({
+                        property,
+                        status: "active",
+                      })
+                    }
+                  >
+                    Unarchive
+                  </Button>
+                )}
+              </div>
+            </div>
           )}
-        </>
-      )}
+        </CardContent>
+      </Card>
 
       <ExpensesSection propertyId={property.propertyId} />
     </div>

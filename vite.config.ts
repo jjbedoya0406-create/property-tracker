@@ -1,6 +1,8 @@
 /// <reference types="vitest/config" />
+import path from "node:path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 // GitHub Pages serves this as a project site at
@@ -11,6 +13,11 @@ const REPO_BASE = "/property-tracker/";
 // https://vite.dev/config/
 export default defineConfig(({ command }) => ({
   base: command === "build" ? REPO_BASE : "/",
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
@@ -18,6 +25,7 @@ export default defineConfig(({ command }) => ({
   },
   plugins: [
     react(),
+    tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "apple-touch-icon.png"],
@@ -25,8 +33,8 @@ export default defineConfig(({ command }) => ({
         name: "Property Expense Tracker",
         short_name: "Expense Tracker",
         description: "Capture and track rental property expenses and receipts.",
-        theme_color: "#1e293b",
-        background_color: "#ffffff",
+        theme_color: "#2F5233",
+        background_color: "#EFF3EC",
         display: "standalone",
         // Relative (no leading slash) so vite-plugin-pwa resolves these
         // against `base` — a leading slash would point at the domain root

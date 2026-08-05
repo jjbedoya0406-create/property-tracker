@@ -1,4 +1,5 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExpenseForm } from "../features/expenses/ExpenseForm";
 
 export function CapturePage() {
@@ -7,12 +8,20 @@ export function CapturePage() {
   const initialPropertyId = searchParams.get("propertyId") ?? undefined;
 
   return (
-    <div>
-      <h1>Capture Receipt</h1>
-      <ExpenseForm
-        initialPropertyId={initialPropertyId}
-        onSaved={(propertyId) => navigate(`/properties/${propertyId}`)}
-      />
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-xl">Capture Receipt</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ExpenseForm
+          initialPropertyId={initialPropertyId}
+          onSaved={(propertyId, expenseId) =>
+            navigate(`/properties/${propertyId}`, {
+              state: { justLoggedExpenseId: expenseId },
+            })
+          }
+        />
+      </CardContent>
+    </Card>
   );
 }

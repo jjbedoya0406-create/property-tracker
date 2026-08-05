@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, Outlet } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "../auth";
 
 export function Layout() {
@@ -14,23 +15,28 @@ export function Layout() {
   }
 
   return (
-    <div>
-      <header>
-        <nav>
-          <Link to="/properties">Properties</Link>
+    <div className="min-h-svh bg-background">
+      <header className="border-b border-border">
+        <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <Link
+            to="/properties"
+            className="text-lg font-medium text-foreground"
+          >
+            Property Expense Tracker
+          </Link>
           {isSignedIn && (
-            <>
-              {" | "}
-              <Link to="/capture">Capture receipt</Link>
-              {" | "}
-              <button type="button" onClick={handleSignOut}>
+            <nav className="flex items-center gap-2">
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/capture">Capture receipt</Link>
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleSignOut}>
                 Sign out
-              </button>
-            </>
+              </Button>
+            </nav>
           )}
-        </nav>
+        </div>
       </header>
-      <main>
+      <main className="mx-auto max-w-2xl px-4 py-6">
         <Outlet />
       </main>
     </div>

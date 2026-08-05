@@ -1,4 +1,7 @@
+import { Camera } from "lucide-react";
 import type { ChangeEvent } from "react";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface ReceiptCaptureInputProps {
   onCapture: (file: File) => void;
@@ -8,7 +11,8 @@ interface ReceiptCaptureInputProps {
 // `capture="environment"` opens the device's rear camera directly on mobile
 // browsers (the PRD's "well-supported in mobile browsers today" bet, rather
 // than a custom getUserMedia/canvas camera UI) and falls back to a plain
-// file picker on desktop.
+// file picker on desktop. The native <input type="file"> can't be styled
+// directly, so it's visually hidden behind a label styled like a button.
 export function ReceiptCaptureInput({
   onCapture,
   disabled,
@@ -22,7 +26,14 @@ export function ReceiptCaptureInput({
   }
 
   return (
-    <label>
+    <label
+      className={cn(
+        buttonVariants({ variant: "outline" }),
+        "w-full cursor-pointer",
+        disabled && "pointer-events-none opacity-50",
+      )}
+    >
+      <Camera className="size-4" />
       Take photo of receipt
       <input
         type="file"
@@ -30,6 +41,7 @@ export function ReceiptCaptureInput({
         capture="environment"
         onChange={handleChange}
         disabled={disabled}
+        className="sr-only"
       />
     </label>
   );

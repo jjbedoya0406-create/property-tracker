@@ -1,4 +1,9 @@
 import { useState, type FormEvent } from "react";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { propertyInputSchema, type PropertyInput } from "./schema";
 
 interface PropertyFormProps {
@@ -32,32 +37,41 @@ export function PropertyForm({
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div>
-        <label htmlFor="property-name">Name</label>
-        <input
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="property-name">Name</Label>
+        <Input
           id="property-name"
           value={name}
           onChange={(event) => setName(event.target.value)}
         />
       </div>
-      <div>
-        <label htmlFor="property-address">Address</label>
-        <input
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="property-address">Address</Label>
+        <Input
           id="property-address"
           value={address}
           onChange={(event) => setAddress(event.target.value)}
         />
       </div>
-      {error && <p role="alert">{error}</p>}
-      <button type="submit" disabled={isSubmitting}>
-        {submitLabel}
-      </button>
-      {onCancel && (
-        <button type="button" onClick={onCancel}>
-          Cancel
-        </button>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
+
+      <div className="flex gap-2">
+        <Button type="submit" disabled={isSubmitting}>
+          {submitLabel}
+        </Button>
+        {onCancel && (
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+        )}
+      </div>
     </form>
   );
 }

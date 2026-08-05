@@ -1,4 +1,16 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useProperties } from "../properties/hooks";
 import { useCreateExpenseWithReceipt } from "./hooks";
 import { extractGuessesFromText, recognizeReceiptText } from "./ocr";
@@ -8,7 +20,7 @@ import { STARTER_CATEGORIES, type Category } from "../../types";
 
 interface ExpenseFormProps {
   initialPropertyId?: string;
-  onSaved: (propertyId: string) => void;
+  onSaved: (propertyId: string, expenseId: string) => void;
 }
 
 export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
@@ -72,7 +84,7 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
     createExpense.mutate(
       { ...result.data, photo },
       {
-        onSuccess: () => onSaved(result.data.propertyId),
+        onSuccess: (expense) => onSaved(expense.propertyId, expense.expenseId),
         onError: (err) =>
           setFormError(
             err instanceof Error ? err.message : "Failed to save expense",
@@ -84,45 +96,52 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
   const isBusy = isRunningOcr || createExpense.isPending;
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div>
-        <label htmlFor="expense-property">Property</label>
-        <select
-          id="expense-property"
-          value={propertyId}
-          onChange={(event) => setPropertyId(event.target.value)}
-        >
-          <option value="">Select a property…</option>
-          {activeProperties.map((property) => (
-            <option key={property.propertyId} value={property.propertyId}>
-              {property.name}
-            </option>
-          ))}
-        </select>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="expense-property">Property</Label>
+        <Select value={propertyId} onValueChange={setPropertyId}>
+          <SelectTrigger id="expense-property" className="w-full">
+            <SelectValue placeholder="Select a property…" />
+          </SelectTrigger>
+          <SelectContent>
+            {activeProperties.map((property) => (
+              <SelectItem key={property.propertyId} value={property.propertyId}>
+                {property.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      <div>
+      <div className="flex flex-col gap-2">
         <ReceiptCaptureInput onCapture={handleCapture} disabled={isBusy} />
         {photoPreviewUrl && (
-          <p>
-            <img src={photoPreviewUrl} alt="Receipt preview" width={200} />
+          <img
+            src={photoPreviewUrl}
+            alt="Receipt preview"
+            className="max-h-48 rounded-lg border border-border object-contain"
+          />
+        )}
+        {isRunningOcr && (
+          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            Reading receipt…
           </p>
         )}
-        {isRunningOcr && <p>Reading receipt…</p>}
       </div>
 
-      <div>
-        <label htmlFor="expense-vendor">Vendor</label>
-        <input
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="expense-vendor">Vendor</Label>
+        <Input
           id="expense-vendor"
           value={vendor}
           onChange={(event) => setVendor(event.target.value)}
         />
       </div>
 
-      <div>
-        <label htmlFor="expense-amount">Amount</label>
-        <input
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="expense-amount">Amount</Label>
+        <Input
           id="expense-amount"
           type="number"
           step="0.01"
@@ -131,9 +150,9 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
         />
       </div>
 
-      <div>
-        <label htmlFor="expense-date">Date</label>
-        <input
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="expense-date">Date</Label>
+        <Input
           id="expense-date"
           type="date"
           value={date}
@@ -141,27 +160,35 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
         />
       </div>
 
-      <div>
-        <label htmlFor="expense-category">Category</label>
-        <select
-          id="expense-category"
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="expense-category">Category</Label>
+        <Select
           value={category}
-          onChange={(event) => setCategory(event.target.value as Category)}
+          onValueChange={(value) => setCategory(value as Category)}
         >
-          <option value="">Select a category…</option>
-          {STARTER_CATEGORIES.map((starterCategory) => (
-            <option key={starterCategory} value={starterCategory}>
-              {starterCategory}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger id="expense-category" className="w-full">
+            <SelectValue placeholder="Select a category…" />
+          </SelectTrigger>
+          <SelectContent>
+            {STARTER_CATEGORIES.map((starterCategory) => (
+              <SelectItem key={starterCategory} value={starterCategory}>
+                {starterCategory}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      {formError && <p role="alert">{formError}</p>}
+      {formError && (
+        <Alert variant="destructive">
+          <AlertCircle />
+          <AlertDescription>{formError}</AlertDescription>
+        </Alert>
+      )}
 
-      <button type="submit" disabled={isBusy}>
-        {createExpense.isPending ? "Saving…" : "Save expense"}
-      </button>
+      <Button type="submit" className="w-full" disabled={isBusy}>
+        {createExpense.isPending ? "Logging…" : "Log expense"}
+      </Button>
     </form>
   );
 }

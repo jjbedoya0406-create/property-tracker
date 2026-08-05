@@ -1,4 +1,14 @@
 import { Navigate } from "react-router-dom";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useAuth } from "../auth";
 
 export function SignInPage() {
@@ -9,13 +19,26 @@ export function SignInPage() {
   }
 
   return (
-    <div>
-      <h1>Property Expense Tracker</h1>
-      <p>Sign in to view and manage your portfolio.</p>
-      <button type="button" onClick={signIn} disabled={isSigningIn}>
-        {isSigningIn ? "Signing in…" : "Sign in with Google"}
-      </button>
-      {error && <p role="alert">{error}</p>}
+    <div className="flex justify-center py-8">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle className="text-xl">Property Expense Tracker</CardTitle>
+          <CardDescription>
+            Sign in to view and manage your portfolio.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <Button className="w-full" onClick={signIn} disabled={isSigningIn}>
+            {isSigningIn ? "Signing in…" : "Sign in with Google"}
+          </Button>
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
