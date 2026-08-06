@@ -1,10 +1,13 @@
 import { appendValues, getValues } from "../api/sheets/client";
-import type { Category, Expense, ExpenseSource } from "../types";
+import type { Expense, ExpenseSource } from "../types";
 
 // Matches the Expenses tab shape in PRD §8. Row 1 is the header (written
 // once in data/portfolio.ts), data starts at row 2. Unlike Properties, rows
 // are never rewritten in place for v1 (no edit/delete of saved expenses yet
-// — PRD §7 "should-have"), so this module is append/read only.
+// — PRD §7 "should-have"), so this module is append/read only. (The
+// category-name-to-ID migration in data/portfolio.ts is the one exception
+// that does rewrite existing rows, but that's a one-time migration, not
+// part of this module's normal read/write path.)
 const SHEET_NAME = "Expenses";
 const DATA_RANGE = `${SHEET_NAME}!A2:J`;
 
@@ -15,7 +18,7 @@ function rowToExpense(row: unknown[]): Expense {
     amount,
     date,
     vendor,
-    category,
+    categoryId,
     receiptDriveUrl,
     source,
     createdAt,
@@ -38,7 +41,7 @@ function rowToExpense(row: unknown[]): Expense {
     amount: Number(amount) || 0,
     date,
     vendor,
-    category: category as Category,
+    categoryId,
     receiptDriveUrl: receiptDriveUrl || undefined,
     source: source === "manual" ? "manual" : "ocr",
     createdAt,
@@ -53,7 +56,7 @@ function expenseToRow(expense: Expense): unknown[] {
     expense.amount,
     expense.date,
     expense.vendor,
-    expense.category,
+    expense.categoryId,
     expense.receiptDriveUrl ?? "",
     expense.source,
     expense.createdAt,
@@ -76,7 +79,7 @@ export interface CreateExpenseInput {
   amount: number;
   date: string;
   vendor: string;
-  category: Category;
+  categoryId: string;
   receiptDriveUrl?: string;
   source: ExpenseSource;
 }

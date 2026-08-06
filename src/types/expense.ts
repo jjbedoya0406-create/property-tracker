@@ -1,5 +1,3 @@
-import type { Category } from "./category";
-
 export type ExpenseSource = "ocr" | "manual";
 
 export interface Expense {
@@ -8,7 +6,10 @@ export interface Expense {
   amount: number;
   date: string;
   vendor: string;
-  category: Category;
+  // References a Categories row (Category.categoryId) rather than storing
+  // the name directly — renaming a category then updates everywhere it's
+  // used without touching past expense rows (PRD §8, Story 1.6).
+  categoryId: string;
   receiptDriveUrl?: string;
   source: ExpenseSource;
   createdAt: string;

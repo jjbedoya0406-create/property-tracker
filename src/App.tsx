@@ -5,6 +5,7 @@ import { queryClient } from "./queryClient";
 import { RequirePortfolio } from "./portfolio/RequirePortfolio";
 import {
   CapturePage,
+  CategoriesListPage,
   Layout,
   PropertiesListPage,
   PropertyDetailPage,
@@ -37,6 +38,7 @@ function App() {
                   element={<PropertyDetailPage />}
                 />
                 <Route path="capture" element={<CapturePage />} />
+                <Route path="categories" element={<CategoriesListPage />} />
               </Route>
             </Route>
           </Routes>

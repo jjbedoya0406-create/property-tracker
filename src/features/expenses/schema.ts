@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { STARTER_CATEGORIES } from "../../types";
 
 export const expenseInputSchema = z.object({
   propertyId: z.string().min(1, "Select a property"),
@@ -8,7 +7,7 @@ export const expenseInputSchema = z.object({
     message: "Enter an amount greater than zero",
   }),
   date: z.string().min(1, "Date is required"),
-  category: z.enum(STARTER_CATEGORIES),
+  categoryId: z.string().min(1, "Select a category"),
 });
 
 export type ExpenseInput = z.infer<typeof expenseInputSchema>;

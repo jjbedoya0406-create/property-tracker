@@ -12,13 +12,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useCategories } from "../categories/hooks";
 import { useProperties } from "../properties/hooks";
 import { useCreateExpenseWithReceipt } from "./hooks";
 import { normalizeImageForOcr } from "./imagePreprocessing";
 import { extractGuessesFromText, recognizeReceiptText } from "./ocr";
 import { ReceiptCaptureInput } from "./ReceiptCaptureInput";
 import { expenseInputSchema } from "./schema";
-import { STARTER_CATEGORIES, type Category } from "../../types";
 
 interface ExpenseFormProps {
   initialPropertyId?: string;
@@ -27,6 +27,7 @@ interface ExpenseFormProps {
 
 export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
   const { data: properties } = useProperties();
+  const { data: categories } = useCategories();
   const createExpense = useCreateExpenseWithReceipt();
 
   const [propertyId, setPropertyId] = useState(initialPropertyId ?? "");
@@ -36,7 +37,7 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
   const [vendor, setVendor] = useState("");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState("");
-  const [category, setCategory] = useState<Category | "">("");
+  const [categoryId, setCategoryId] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
 
   // Revoke the object URL when replaced/unmounted to avoid leaking memory.
@@ -50,6 +51,11 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
 
   const activeProperties = (properties ?? []).filter(
     (property) => property.status === "active",
+  );
+  // Archived categories stop appearing as options for new expenses (Story
+  // 1.6), though past expenses keep referencing them by ID unaffected.
+  const activeCategories = (categories ?? []).filter(
+    (category) => category.status === "active",
   );
 
   async function handleCapture(file: File) {
@@ -90,7 +96,7 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
       vendor,
       amount,
       date,
-      category,
+      categoryId,
     });
     if (!result.success) {
       setFormError(result.error.issues[0]?.message ?? "Invalid input");
@@ -178,17 +184,14 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="expense-category">Category</Label>
-        <Select
-          value={category}
-          onValueChange={(value) => setCategory(value as Category)}
-        >
+        <Select value={categoryId} onValueChange={setCategoryId}>
           <SelectTrigger id="expense-category" className="w-full">
             <SelectValue placeholder="Select a category…" />
           </SelectTrigger>
           <SelectContent>
-            {STARTER_CATEGORIES.map((starterCategory) => (
-              <SelectItem key={starterCategory} value={starterCategory}>
-                {starterCategory}
+            {activeCategories.map((cat) => (
+              <SelectItem key={cat.categoryId} value={cat.categoryId}>
+                {cat.name}
               </SelectItem>
             ))}
           </SelectContent>

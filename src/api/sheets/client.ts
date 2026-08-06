@@ -70,3 +70,34 @@ export function updateValues(
     body: JSON.stringify({ range, values }),
   });
 }
+
+// Lightweight metadata-only read (no cell data) — used to detect whether a
+// spreadsheet created by an older app version is missing a tab a newer
+// version expects, so it can be migrated in place.
+export async function getSheetTitles(
+  accessToken: string,
+  spreadsheetId: string,
+): Promise<string[]> {
+  const url = `${SHEETS_BASE}/${spreadsheetId}?fields=sheets.properties.title`;
+  const { sheets } = await authorizedFetchJson<{
+    sheets: { properties: { title: string } }[];
+  }>(accessToken, url);
+  return sheets.map((sheet) => sheet.properties.title);
+}
+
+// Adds a new tab to an already-existing spreadsheet — for migrating a
+// spreadsheet created before this tab existed, as opposed to
+// createSpreadsheet's initial full set on brand-new accounts.
+export function addSheet(
+  accessToken: string,
+  spreadsheetId: string,
+  title: string,
+): Promise<unknown> {
+  const url = `${SHEETS_BASE}/${spreadsheetId}:batchUpdate`;
+  return authorizedFetchJson(accessToken, url, {
+    method: "POST",
+    body: JSON.stringify({
+      requests: [{ addSheet: { properties: { title } } }],
+    }),
+  });
+}

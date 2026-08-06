@@ -4,7 +4,6 @@ import { queryKeys } from "../../api/queryKeys";
 import { createExpense, listExpenses } from "../../data/expenses";
 import { uploadReceiptImage } from "../../data/receipts";
 import { useSpreadsheetId } from "../../portfolio/context";
-import type { Category } from "../../types";
 
 // Single shared cache entry for the whole portfolio's expenses — Sheets has
 // no server-side filter-by-column, so every consumer fetches the same full
@@ -27,7 +26,7 @@ interface CreateExpenseWithReceiptInput {
   vendor: string;
   amount: number;
   date: string;
-  category: Category;
+  categoryId: string;
   photo: Blob | null;
 }
 
@@ -51,7 +50,7 @@ export function useCreateExpenseWithReceipt() {
         vendor: input.vendor,
         amount: input.amount,
         date: input.date,
-        category: input.category,
+        categoryId: input.categoryId,
         receiptDriveUrl,
         source: input.photo ? "ocr" : "manual",
       });

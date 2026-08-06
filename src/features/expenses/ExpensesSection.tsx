@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoggedStamp } from "@/components/LoggedStamp";
 import { toDisplayCase } from "@/lib/text";
+import { useCategories } from "../categories/hooks";
 import { useExpenses } from "./hooks";
 
 interface ExpensesSectionProps {
@@ -21,6 +22,9 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
 
 export function ExpensesSection({ propertyId }: ExpensesSectionProps) {
   const { data: expenses, isPending, isError, error } = useExpenses(propertyId);
+  // Unfiltered (includes archived) so historical expenses still resolve a
+  // name for categories that have since been archived (Story 1.6).
+  const { data: categories } = useCategories();
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const location = useLocation();
@@ -34,6 +38,11 @@ export function ExpensesSection({ propertyId }: ExpensesSectionProps) {
   const runningTotal = useMemo(
     () => (expenses ?? []).reduce((sum, expense) => sum + expense.amount, 0),
     [expenses],
+  );
+
+  const categoryNameById = useMemo(
+    () => new Map((categories ?? []).map((c) => [c.categoryId, c.name])),
+    [categories],
   );
 
   const filtered = useMemo(() => {
@@ -121,7 +130,8 @@ export function ExpensesSection({ propertyId }: ExpensesSectionProps) {
                           {expense.date}
                         </span>
                         <span className="rounded-[6px] bg-category-pill px-2 py-0.5 text-[11px] text-category-pill-foreground">
-                          {expense.category}
+                          {categoryNameById.get(expense.categoryId) ??
+                            "Unknown category"}
                         </span>
                       </div>
                     </div>
