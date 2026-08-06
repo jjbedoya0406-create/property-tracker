@@ -14,4 +14,5 @@ export interface Expense {
   source: ExpenseSource;
   createdAt: string;
   editedAt?: string;
+  notes?: string;
 }

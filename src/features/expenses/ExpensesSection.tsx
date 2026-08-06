@@ -134,6 +134,11 @@ export function ExpensesSection({ propertyId }: ExpensesSectionProps) {
                             t("expenses.unknownCategory")}
                         </span>
                       </div>
+                      {expense.notes && (
+                        <span className="text-sm text-muted-foreground">
+                          {expense.notes}
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       {expense.expenseId === justLoggedExpenseId && (

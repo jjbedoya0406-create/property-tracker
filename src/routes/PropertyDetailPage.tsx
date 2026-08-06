@@ -7,7 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTranslation } from "../i18n/useTranslation";
 import { ExpensesSection } from "../features/expenses/ExpensesSection";
+import { IncomeSection } from "../features/income/IncomeSection";
 import { PropertyForm } from "../features/properties/PropertyForm";
+import { SummarySection } from "../features/summary/SummarySection";
+import { TenancySection } from "../features/tenancies/TenancySection";
 import {
   useProperties,
   useSetPropertyStatus,
@@ -138,6 +141,9 @@ export function PropertyDetailPage() {
           property data, so gating them behind it was a needless serial
           network waterfall (properties -> expenses -> categories) instead
           of all three loading in parallel. */}
+      <SummarySection propertyId={propertyId} />
+      <TenancySection propertyId={propertyId} />
+      <IncomeSection propertyId={propertyId} />
       <ExpensesSection propertyId={propertyId} />
     </div>
   );

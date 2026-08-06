@@ -1,4 +1,5 @@
 import { appendValues, getValues } from "../api/sheets/client";
+import { normalizeSheetDate } from "../lib/sheetDate";
 import type { Expense, ExpenseSource } from "../types";
 
 // Matches the Expenses tab shape in PRD §8. Row 1 is the header (written
@@ -9,7 +10,7 @@ import type { Expense, ExpenseSource } from "../types";
 // that does rewrite existing rows, but that's a one-time migration, not
 // part of this module's normal read/write path.)
 const SHEET_NAME = "Expenses";
-const DATA_RANGE = `${SHEET_NAME}!A2:J`;
+const DATA_RANGE = `${SHEET_NAME}!A2:K`;
 
 function rowToExpense(row: unknown[]): Expense {
   const [
@@ -23,10 +24,12 @@ function rowToExpense(row: unknown[]): Expense {
     source,
     createdAt,
     editedAt,
+    notes,
   ] = row as [
     string,
     string,
     number,
+    string,
     string,
     string,
     string,
@@ -39,13 +42,14 @@ function rowToExpense(row: unknown[]): Expense {
     expenseId,
     propertyId,
     amount: Number(amount) || 0,
-    date,
+    date: normalizeSheetDate(date),
     vendor,
     categoryId,
     receiptDriveUrl: receiptDriveUrl || undefined,
     source: source === "manual" ? "manual" : "ocr",
     createdAt,
     editedAt: editedAt || undefined,
+    notes: notes || undefined,
   };
 }
 
@@ -61,6 +65,7 @@ function expenseToRow(expense: Expense): unknown[] {
     expense.source,
     expense.createdAt,
     expense.editedAt ?? "",
+    expense.notes ?? "",
   ];
 }
 
@@ -82,6 +87,7 @@ export interface CreateExpenseInput {
   categoryId: string;
   receiptDriveUrl?: string;
   source: ExpenseSource;
+  notes?: string;
 }
 
 export async function createExpense(

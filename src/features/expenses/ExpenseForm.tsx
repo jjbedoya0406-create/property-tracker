@@ -4,6 +4,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { parseCurrencyAmount } from "@/lib/currency";
 import { toDisplayCase } from "@/lib/text";
 import {
@@ -43,6 +44,7 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [notes, setNotes] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
 
   // Revoke the object URL when replaced/unmounted to avoid leaking memory.
@@ -110,6 +112,7 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
       amount: parseCurrencyAmount(amount, currency),
       date,
       categoryId,
+      notes,
     });
     if (!result.success) {
       setFormError(
@@ -229,6 +232,15 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="expense-notes">{t("expenseForm.notesLabel")}</Label>
+        <Textarea
+          id="expense-notes"
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+        />
       </div>
 
       {formError && (

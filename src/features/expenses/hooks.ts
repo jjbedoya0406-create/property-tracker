@@ -27,6 +27,7 @@ interface CreateExpenseWithReceiptInput {
   amount: number;
   date: string;
   categoryId: string;
+  notes?: string;
   photo: Blob | null;
 }
 
@@ -51,6 +52,7 @@ export function useCreateExpenseWithReceipt() {
         amount: input.amount,
         date: input.date,
         categoryId: input.categoryId,
+        notes: input.notes,
         receiptDriveUrl,
         source: input.photo ? "ocr" : "manual",
       });

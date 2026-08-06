@@ -36,11 +36,30 @@ const EXPENSES_HEADER = [
   "source",
   "created_at",
   "edited_at",
+  "notes",
 ];
 const CATEGORIES_HEADER = ["category_id", "name", "status", "created_at"];
 const SETTINGS_HEADER = ["language", "currency"];
+const INCOME_HEADER = [
+  "income_id",
+  "property_id",
+  "amount",
+  "date",
+  "notes",
+  "created_at",
+];
+const TENANCIES_HEADER = [
+  "tenancy_id",
+  "property_id",
+  "contract_start",
+  "expected_end_date",
+  "actual_move_out_date",
+  "rent_rate",
+  "created_at",
+];
 const EXPENSES_COLUMN_COUNT = EXPENSES_HEADER.length;
 const EXPENSES_CATEGORY_COLUMN_INDEX = EXPENSES_HEADER.indexOf("category");
+const EXPENSES_NOTES_COLUMN_INDEX = EXPENSES_HEADER.indexOf("notes");
 
 // Resolves (or creates) the base spreadsheet — Properties + Expenses only.
 // Categories and Settings are deliberately NOT ensured here: seeding the
@@ -56,7 +75,20 @@ export async function ensurePortfolioSpreadsheet(
     SPREADSHEET_MIME_TYPE,
   );
 
-  return existing ? existing.id : await createNewSpreadsheet(accessToken);
+  const spreadsheetId = existing
+    ? existing.id
+    : await createNewSpreadsheet(accessToken);
+
+  // Income/Tenancies (Outcome 6) don't depend on the account's language
+  // (unlike Categories), so they're safe to ensure unconditionally here on
+  // every sign-in, same idempotent add-if-missing pattern as elsewhere.
+  await Promise.all([
+    ensureIncomeTab(accessToken, spreadsheetId),
+    ensureTenanciesTab(accessToken, spreadsheetId),
+    ensureExpensesNotesColumn(accessToken, spreadsheetId),
+  ]);
+
+  return spreadsheetId;
 }
 
 async function createNewSpreadsheet(accessToken: string): Promise<string> {
@@ -69,12 +101,61 @@ async function createNewSpreadsheet(accessToken: string): Promise<string> {
     updateValues(accessToken, spreadsheet.spreadsheetId, "Properties!A1:E1", [
       PROPERTIES_HEADER,
     ]),
-    updateValues(accessToken, spreadsheet.spreadsheetId, "Expenses!A1:J1", [
+    updateValues(accessToken, spreadsheet.spreadsheetId, "Expenses!A1:K1", [
       EXPENSES_HEADER,
     ]),
   ]);
 
   return spreadsheet.spreadsheetId;
+}
+
+async function ensureIncomeTab(
+  accessToken: string,
+  spreadsheetId: string,
+): Promise<void> {
+  const titles = await getSheetTitles(accessToken, spreadsheetId);
+  if (titles.includes("Income")) {
+    return;
+  }
+  await addSheet(accessToken, spreadsheetId, "Income");
+  await updateValues(accessToken, spreadsheetId, "Income!A1:F1", [
+    INCOME_HEADER,
+  ]);
+}
+
+async function ensureTenanciesTab(
+  accessToken: string,
+  spreadsheetId: string,
+): Promise<void> {
+  const titles = await getSheetTitles(accessToken, spreadsheetId);
+  if (titles.includes("Tenancies")) {
+    return;
+  }
+  await addSheet(accessToken, spreadsheetId, "Tenancies");
+  await updateValues(accessToken, spreadsheetId, "Tenancies!A1:G1", [
+    TENANCIES_HEADER,
+  ]);
+}
+
+// Spreadsheets created before Outcome 6 have a 10-column Expenses header
+// (no notes). Adds the 11th column header only — existing rows simply read
+// back with an empty notes cell, no row rewrite needed.
+async function ensureExpensesNotesColumn(
+  accessToken: string,
+  spreadsheetId: string,
+): Promise<void> {
+  const { values } = await getValues(
+    accessToken,
+    spreadsheetId,
+    "Expenses!A1:K1",
+  );
+  const header = values?.[0] ?? [];
+  if (header[EXPENSES_NOTES_COLUMN_INDEX] === "notes") {
+    return;
+  }
+  await updateValues(accessToken, spreadsheetId, "Expenses!K1:K1", [
+    ["notes"],
+  ]);
 }
 
 // Called once, when the onboarding language/currency picker is submitted —
