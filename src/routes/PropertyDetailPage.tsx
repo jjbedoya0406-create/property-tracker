@@ -20,26 +20,11 @@ export function PropertyDetailPage() {
   const setPropertyStatus = useSetPropertyStatus();
   const [isEditing, setIsEditing] = useState(false);
 
-  if (isPending) {
-    return <p className="text-muted-foreground">Loading…</p>;
-  }
-
-  if (isError) {
-    return (
-      <Alert variant="destructive">
-        <AlertCircle />
-        <AlertDescription>
-          {error instanceof Error ? error.message : "Failed to load property."}
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  const property = properties.find((p) => p.propertyId === propertyId);
-
-  if (!property) {
+  if (!propertyId) {
     return <Navigate to="/properties" replace />;
   }
+
+  const property = properties?.find((p) => p.propertyId === propertyId);
 
   return (
     <div className="flex flex-col gap-6">
@@ -51,81 +36,107 @@ export function PropertyDetailPage() {
         My properties
       </Link>
 
-      <Card>
-        <CardContent>
-          {isEditing ? (
-            <PropertyForm
-              initialValues={{
-                name: property.name,
-                address: property.address,
-              }}
-              submitLabel="Save changes"
-              isSubmitting={updateProperty.isPending}
-              onSubmit={(input) => {
-                updateProperty.mutate(
-                  { ...property, name: input.name, address: input.address },
-                  { onSuccess: () => setIsEditing(false) },
-                );
-              }}
-              onCancel={() => setIsEditing(false)}
-            />
-          ) : (
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h1 className="text-xl font-medium">{property.name}</h1>
-                  {property.address && (
-                    <p className="text-muted-foreground">{property.address}</p>
+      {isPending && <p className="text-muted-foreground">Loading…</p>}
+
+      {isError && (
+        <Alert variant="destructive">
+          <AlertCircle />
+          <AlertDescription>
+            {error instanceof Error
+              ? error.message
+              : "Failed to load property."}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {!isPending && !isError && !property && (
+        <Navigate to="/properties" replace />
+      )}
+
+      {property && (
+        <Card>
+          <CardContent>
+            {isEditing ? (
+              <PropertyForm
+                initialValues={{
+                  name: property.name,
+                  address: property.address,
+                }}
+                submitLabel="Save changes"
+                isSubmitting={updateProperty.isPending}
+                onSubmit={(input) => {
+                  updateProperty.mutate(
+                    { ...property, name: input.name, address: input.address },
+                    { onSuccess: () => setIsEditing(false) },
+                  );
+                }}
+                onCancel={() => setIsEditing(false)}
+              />
+            ) : (
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h1 className="text-xl font-medium">{property.name}</h1>
+                    {property.address && (
+                      <p className="text-muted-foreground">
+                        {property.address}
+                      </p>
+                    )}
+                  </div>
+                  {property.status === "archived" && (
+                    <Badge variant="secondary">Archived</Badge>
                   )}
                 </div>
-                {property.status === "archived" && (
-                  <Badge variant="secondary">Archived</Badge>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditing(true)}
-                >
-                  Edit
-                </Button>
-                {property.status === "active" ? (
+                <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={setPropertyStatus.isPending}
-                    onClick={() =>
-                      setPropertyStatus.mutate({
-                        property,
-                        status: "archived",
-                      })
-                    }
+                    onClick={() => setIsEditing(true)}
                   >
-                    Archive
+                    Edit
                   </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={setPropertyStatus.isPending}
-                    onClick={() =>
-                      setPropertyStatus.mutate({
-                        property,
-                        status: "active",
-                      })
-                    }
-                  >
-                    Unarchive
-                  </Button>
-                )}
+                  {property.status === "active" ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={setPropertyStatus.isPending}
+                      onClick={() =>
+                        setPropertyStatus.mutate({
+                          property,
+                          status: "archived",
+                        })
+                      }
+                    >
+                      Archive
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={setPropertyStatus.isPending}
+                      onClick={() =>
+                        setPropertyStatus.mutate({
+                          property,
+                          status: "active",
+                        })
+                      }
+                    >
+                      Unarchive
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
-      <ExpensesSection propertyId={property.propertyId} />
+      {/* Mounted immediately off the URL param rather than waiting on the
+          properties fetch above — expenses/categories don't depend on
+          property data, so gating them behind it was a needless serial
+          network waterfall (properties -> expenses -> categories) instead
+          of all three loading in parallel. */}
+      <ExpensesSection propertyId={propertyId} />
     </div>
   );
 }
