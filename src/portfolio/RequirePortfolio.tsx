@@ -1,21 +1,26 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useRequiredAccessToken } from "../auth";
-import { ensurePortfolioSpreadsheet } from "../data/portfolio";
-import { SpreadsheetIdContext } from "./context";
+import { queryKeys } from "../api/queryKeys";
+import { applyOnboarding, ensurePortfolioSpreadsheet } from "../data/portfolio";
+import { getSettings } from "../data/settings";
+import type { Settings } from "../types";
+import { OnboardingPicker } from "./OnboardingPicker";
+import { PortfolioContext } from "./context";
 
 // Sits inside ProtectedRoute: resolves (or creates, on first sign-in) the
-// user's spreadsheet before rendering any property/expense UI, satisfying
-// Story 1.1's "new user gets a spreadsheet created and lands in their
-// (empty) portfolio" / "existing user loads their linked spreadsheet".
+// user's spreadsheet before rendering any property/expense UI (Story
+// 1.1), then resolves account Settings — showing a one-time onboarding
+// picker if the account hasn't chosen a language/currency yet (Outcome 5).
 export function RequirePortfolio({ children }: { children: ReactNode }) {
   const accessToken = useRequiredAccessToken();
+  const queryClient = useQueryClient();
 
   const {
     data: spreadsheetId,
-    isPending,
-    isError,
-    error,
+    isPending: isSpreadsheetPending,
+    isError: isSpreadsheetError,
+    error: spreadsheetError,
   } = useQuery({
     queryKey: ["portfolio", "spreadsheetId"],
     queryFn: () => ensurePortfolioSpreadsheet(accessToken),
@@ -23,23 +28,75 @@ export function RequirePortfolio({ children }: { children: ReactNode }) {
     retry: false,
   });
 
-  if (isPending) {
+  const {
+    data: settings,
+    isPending: isSettingsPending,
+    isError: isSettingsError,
+    error: settingsError,
+  } = useQuery({
+    queryKey: ["portfolio", "settings"],
+    queryFn: () => getSettings(accessToken, spreadsheetId!),
+    enabled: spreadsheetId !== undefined,
+    staleTime: Infinity,
+    retry: false,
+  });
+
+  const onboarding = useMutation({
+    mutationFn: (chosen: Settings) =>
+      applyOnboarding(accessToken, spreadsheetId!, chosen),
+    onSuccess: (_data, chosen) => {
+      queryClient.setQueryData(["portfolio", "settings"], chosen);
+      // Categories may have just been seeded for the first time.
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.categories.all,
+      });
+    },
+  });
+
+  if (
+    isSpreadsheetPending ||
+    (spreadsheetId !== undefined && isSettingsPending)
+  ) {
     return <p>Setting up your portfolio…</p>;
   }
 
-  if (isError) {
+  if (isSpreadsheetError) {
     return (
       <p role="alert">
-        {error instanceof Error
-          ? error.message
+        {spreadsheetError instanceof Error
+          ? spreadsheetError.message
           : "Failed to load your portfolio."}
       </p>
     );
   }
 
+  if (isSettingsError) {
+    return (
+      <p role="alert">
+        {settingsError instanceof Error
+          ? settingsError.message
+          : "Failed to load your account settings."}
+      </p>
+    );
+  }
+
+  if (!settings) {
+    return (
+      <OnboardingPicker
+        isSubmitting={onboarding.isPending}
+        error={
+          onboarding.error instanceof Error ? onboarding.error.message : null
+        }
+        onSubmit={(chosen) => onboarding.mutate(chosen)}
+      />
+    );
+  }
+
   return (
-    <SpreadsheetIdContext.Provider value={spreadsheetId}>
+    <PortfolioContext.Provider
+      value={{ spreadsheetId: spreadsheetId!, settings }}
+    >
       {children}
-    </SpreadsheetIdContext.Provider>
+    </PortfolioContext.Provider>
   );
 }

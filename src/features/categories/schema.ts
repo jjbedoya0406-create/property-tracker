@@ -1,7 +1,12 @@
 import { z } from "zod";
+import type { TranslateFn } from "../../i18n/useTranslation";
 
-export const categoryInputSchema = z.object({
-  name: z.string().trim().min(1, "Name is required"),
-});
+export function createCategoryInputSchema(t: TranslateFn) {
+  return z.object({
+    name: z.string().trim().min(1, t("validation.categoryNameRequired")),
+  });
+}
 
-export type CategoryInput = z.infer<typeof categoryInputSchema>;
+export type CategoryInput = z.infer<
+  ReturnType<typeof createCategoryInputSchema>
+>;

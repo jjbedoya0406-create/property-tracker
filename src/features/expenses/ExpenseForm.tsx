@@ -4,6 +4,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { parseCurrencyAmount } from "@/lib/currency";
 import { toDisplayCase } from "@/lib/text";
 import {
   Select,
@@ -12,13 +13,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useTranslation } from "../../i18n/useTranslation";
+import { useSettings } from "../../portfolio/context";
 import { useCategories } from "../categories/hooks";
 import { useProperties } from "../properties/hooks";
 import { useCreateExpenseWithReceipt } from "./hooks";
 import { normalizeImageForOcr } from "./imagePreprocessing";
 import { extractGuessesFromText, recognizeReceiptText } from "./ocr";
 import { ReceiptCaptureInput } from "./ReceiptCaptureInput";
-import { expenseInputSchema } from "./schema";
+import { createExpenseInputSchema } from "./schema";
 
 interface ExpenseFormProps {
   initialPropertyId?: string;
@@ -26,6 +29,8 @@ interface ExpenseFormProps {
 }
 
 export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
+  const { t } = useTranslation();
+  const { language, currency } = useSettings();
   const { data: properties } = useProperties();
   const { data: categories } = useCategories();
   const createExpense = useCreateExpenseWithReceipt();
@@ -77,10 +82,18 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
     setPhotoPreviewUrl(URL.createObjectURL(normalized));
 
     try {
-      const text = await recognizeReceiptText(normalized);
-      const guess = extractGuessesFromText(text);
+      const text = await recognizeReceiptText(normalized, language);
+      const guess = extractGuessesFromText(text, currency);
       if (guess.vendor) setVendor(toDisplayCase(guess.vendor));
-      if (guess.amount !== undefined) setAmount(String(guess.amount));
+      if (guess.amount !== undefined) {
+        // Prefill in the same format the user would type themselves —
+        // period-grouped whole pesos for COP, plain decimal for USD.
+        setAmount(
+          currency === "COP"
+            ? Math.round(guess.amount).toLocaleString("es-CO")
+            : String(guess.amount),
+        );
+      }
       if (guess.date) setDate(guess.date);
     } catch {
       // Best-effort only — a failed OCR read never blocks manual entry.
@@ -91,15 +104,17 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    const result = expenseInputSchema.safeParse({
+    const result = createExpenseInputSchema(t).safeParse({
       propertyId,
       vendor,
-      amount,
+      amount: parseCurrencyAmount(amount, currency),
       date,
       categoryId,
     });
     if (!result.success) {
-      setFormError(result.error.issues[0]?.message ?? "Invalid input");
+      setFormError(
+        result.error.issues[0]?.message ?? t("validation.invalidInput"),
+      );
       return;
     }
     setFormError(null);
@@ -109,7 +124,7 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
         onSuccess: (expense) => onSaved(expense.propertyId, expense.expenseId),
         onError: (err) =>
           setFormError(
-            err instanceof Error ? err.message : "Failed to save expense",
+            err instanceof Error ? err.message : t("errors.saveExpenseFailed"),
           ),
       },
     );
@@ -120,10 +135,12 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="expense-property">Property</Label>
+        <Label htmlFor="expense-property">
+          {t("expenseForm.propertyLabel")}
+        </Label>
         <Select value={propertyId} onValueChange={setPropertyId}>
           <SelectTrigger id="expense-property" className="w-full">
-            <SelectValue placeholder="Select a property…" />
+            <SelectValue placeholder={t("expenseForm.propertyPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
             {activeProperties.map((property) => (
@@ -140,20 +157,20 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
         {photoPreviewUrl && (
           <img
             src={photoPreviewUrl}
-            alt="Receipt preview"
+            alt={t("expenseForm.receiptPreviewAlt")}
             className="max-h-48 rounded-lg border border-border object-contain"
           />
         )}
         {isRunningOcr && (
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
-            Reading receipt…
+            {t("expenseForm.readingReceipt")}
           </p>
         )}
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="expense-vendor">Vendor</Label>
+        <Label htmlFor="expense-vendor">{t("expenseForm.vendorLabel")}</Label>
         <Input
           id="expense-vendor"
           value={vendor}
@@ -162,18 +179,32 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="expense-amount">Amount</Label>
-        <Input
-          id="expense-amount"
-          type="number"
-          step="0.01"
-          value={amount}
-          onChange={(event) => setAmount(event.target.value)}
-        />
+        <Label htmlFor="expense-amount">{t("expenseForm.amountLabel")}</Label>
+        {currency === "COP" ? (
+          // Plain text input for COP — a native number input always
+          // canonicalizes its value with "." as the decimal separator
+          // regardless of locale, which would fight against typing
+          // period-grouped whole pesos (e.g. "430.000").
+          <Input
+            id="expense-amount"
+            type="text"
+            inputMode="numeric"
+            value={amount}
+            onChange={(event) => setAmount(event.target.value)}
+          />
+        ) : (
+          <Input
+            id="expense-amount"
+            type="number"
+            step="0.01"
+            value={amount}
+            onChange={(event) => setAmount(event.target.value)}
+          />
+        )}
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="expense-date">Date</Label>
+        <Label htmlFor="expense-date">{t("expenseForm.dateLabel")}</Label>
         <Input
           id="expense-date"
           type="date"
@@ -183,10 +214,12 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="expense-category">Category</Label>
+        <Label htmlFor="expense-category">
+          {t("expenseForm.categoryLabel")}
+        </Label>
         <Select value={categoryId} onValueChange={setCategoryId}>
           <SelectTrigger id="expense-category" className="w-full">
-            <SelectValue placeholder="Select a category…" />
+            <SelectValue placeholder={t("expenseForm.categoryPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
             {activeCategories.map((cat) => (
@@ -206,7 +239,9 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
       )}
 
       <Button type="submit" className="w-full" disabled={isBusy}>
-        {createExpense.isPending ? "Logging…" : "Log expense"}
+        {createExpense.isPending
+          ? t("expenseForm.loggingButton")
+          : t("expenseForm.logButton")}
       </Button>
     </form>
   );

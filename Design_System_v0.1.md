@@ -12,17 +12,17 @@ This is a personal ledger, not a fintech dashboard. The subject is genuinely acc
 
 ## Color
 
-| Token | Hex | Use |
-|---|---|---|
-| `--bg-ledger` | `#EFF3EC` | App background — pale ledger-paper green, not stark white |
-| `--surface` | `#FFFFFF` | Cards, elevated surfaces on top of the ledger background |
-| `--ink` | `#24302B` | Primary text — a soft green-black, not pure black |
-| `--ink-muted` | `#5B685F` | Secondary text, captions, metadata |
-| `--rule` | `#D3DCD1` | Hairline dividers between list rows — literal ledger lines |
-| `--action` | `#2F5233` | Primary actions, active states — deep ledger-ink green |
-| `--action-hover` | `#25401F` | Hover/pressed state for primary actions |
-| `--stamp` | `#2B3A55` | The signature "LOGGED" stamp mark only — deep stamp-ink navy. Not used anywhere else, so it stays special. |
-| `--error` | `#A13D2F` | Validation errors, destructive actions only |
+| Token            | Hex       | Use                                                                                                        |
+| ---------------- | --------- | ---------------------------------------------------------------------------------------------------------- |
+| `--bg-ledger`    | `#EFF3EC` | App background — pale ledger-paper green, not stark white                                                  |
+| `--surface`      | `#FFFFFF` | Cards, elevated surfaces on top of the ledger background                                                   |
+| `--ink`          | `#24302B` | Primary text — a soft green-black, not pure black                                                          |
+| `--ink-muted`    | `#5B685F` | Secondary text, captions, metadata                                                                         |
+| `--rule`         | `#D3DCD1` | Hairline dividers between list rows — literal ledger lines                                                 |
+| `--action`       | `#2F5233` | Primary actions, active states — deep ledger-ink green                                                     |
+| `--action-hover` | `#25401F` | Hover/pressed state for primary actions                                                                    |
+| `--stamp`        | `#2B3A55` | The signature "LOGGED" stamp mark only — deep stamp-ink navy. Not used anywhere else, so it stays special. |
+| `--error`        | `#A13D2F` | Validation errors, destructive actions only                                                                |
 
 **Why not the obvious fintech palette:** avoiding warm-cream-plus-terracotta and near-black-plus-neon — both read as generic AI-generated defaults right now, not as choices made for this app. The ledger-green background and stamp-navy accent come directly from the "paper ledger" concept instead.
 

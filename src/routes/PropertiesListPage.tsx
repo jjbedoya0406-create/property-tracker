@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoggedStamp } from "@/components/LoggedStamp";
+import { useTranslation } from "../i18n/useTranslation";
 import { PropertyForm } from "../features/properties/PropertyForm";
 import { useCreateProperty, useProperties } from "../features/properties/hooks";
 import type { PropertyStatus } from "../types";
 
 export function PropertiesListPage() {
+  const { t } = useTranslation();
   const { data: properties, isPending, isError, error } = useProperties();
   const createProperty = useCreateProperty();
   const [statusFilter, setStatusFilter] = useState<PropertyStatus>("active");
@@ -19,7 +21,7 @@ export function PropertiesListPage() {
   const [justCreatedId, setJustCreatedId] = useState<string | null>(null);
 
   if (isPending) {
-    return <p className="text-muted-foreground">Loading your properties…</p>;
+    return <p className="text-muted-foreground">{t("properties.loading")}</p>;
   }
 
   if (isError) {
@@ -27,9 +29,7 @@ export function PropertiesListPage() {
       <Alert variant="destructive">
         <AlertCircle />
         <AlertDescription>
-          {error instanceof Error
-            ? error.message
-            : "Couldn't load your properties. Try reloading the page."}
+          {error instanceof Error ? error.message : t("properties.loadError")}
         </AlertDescription>
       </Alert>
     );
@@ -43,15 +43,15 @@ export function PropertiesListPage() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-medium">My Properties</h1>
+        <h1 className="text-xl font-medium">{t("properties.title")}</h1>
         {!hasNoPropertiesAtAll && (
           <Tabs
             value={statusFilter}
             onValueChange={(value) => setStatusFilter(value as PropertyStatus)}
           >
             <TabsList>
-              <TabsTrigger value="active">Active</TabsTrigger>
-              <TabsTrigger value="archived">Archived</TabsTrigger>
+              <TabsTrigger value="active">{t("common.active")}</TabsTrigger>
+              <TabsTrigger value="archived">{t("common.archived")}</TabsTrigger>
             </TabsList>
           </Tabs>
         )}
@@ -61,10 +61,10 @@ export function PropertiesListPage() {
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
             <p className="text-muted-foreground">
-              No properties yet — add your first one to get started.
+              {t("properties.emptyState")}
             </p>
             <Button variant="outline" onClick={() => setShowAddForm(true)}>
-              Add property
+              {t("properties.addButton")}
             </Button>
           </CardContent>
         </Card>
@@ -74,7 +74,9 @@ export function PropertiesListPage() {
         <>
           {filtered.length === 0 ? (
             <p className="text-muted-foreground">
-              No {statusFilter} properties.
+              {t("properties.noneForStatus", {
+                status: t(`common.${statusFilter}`).toLowerCase(),
+              })}
             </p>
           ) : (
             <Card className="gap-0 py-0">
@@ -89,7 +91,9 @@ export function PropertiesListPage() {
                     <div className="flex items-center gap-2">
                       {property.propertyId === justCreatedId && <LoggedStamp />}
                       {property.status === "archived" && (
-                        <Badge variant="secondary">Archived</Badge>
+                        <Badge variant="secondary">
+                          {t("common.archived")}
+                        </Badge>
                       )}
                       <ChevronRight className="size-4 text-muted-foreground" />
                     </div>
@@ -105,7 +109,7 @@ export function PropertiesListPage() {
               className="self-start"
               onClick={() => setShowAddForm(true)}
             >
-              Add property
+              {t("properties.addButton")}
             </Button>
           )}
         </>
@@ -115,7 +119,7 @@ export function PropertiesListPage() {
         <Card>
           <CardContent>
             <PropertyForm
-              submitLabel="Add property"
+              submitLabel={t("properties.addButton")}
               isSubmitting={createProperty.isPending}
               onSubmit={(input) => {
                 createProperty.mutate(input, {

@@ -23,10 +23,33 @@ describe("extractGuessesFromText", () => {
       "THANK YOU FOR YOUR BUSINESS!",
     ].join("\n");
 
-    const guess = extractGuessesFromText(text);
+    const guess = extractGuessesFromText(text, "USD");
 
     expect(guess.amount).toBe(44.1);
     expect(guess.vendor).toBe("HOME DEPOT");
     expect(guess.date).toBe("2026-05-02");
+  });
+
+  it("reads a COP receipt's period-thousands amount and DD/MM date correctly", () => {
+    // Regression case for the 1000x misread risk (PRD §10): a COP receipt
+    // uses "." as a thousands separator, not a decimal point, and prints
+    // dates DD/MM rather than the US's MM/DD.
+    const text = [
+      "EMCALI",
+      "NIT 890399038-1",
+      "Cali, Valle del Cauca",
+      "Fecha: 15/04/2026",
+      "CONSUMO ENERGIA        $85.000",
+      "SUBTOTAL               $85.000",
+      "IVA                     $0",
+      "TOTAL                  $85.000",
+      "GRACIAS POR SU PAGO",
+    ].join("\n");
+
+    const guess = extractGuessesFromText(text, "COP");
+
+    expect(guess.amount).toBe(85000);
+    expect(guess.vendor).toBe("EMCALI");
+    expect(guess.date).toBe("2026-04-15");
   });
 });

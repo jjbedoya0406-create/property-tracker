@@ -13,6 +13,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "../i18n/useTranslation";
 
 // Locked navigation pattern (Design_System_v0.1.md): exactly 3 tabs,
 // permanently. Properties and Capture are the two most-used actions and
@@ -23,6 +24,7 @@ const tabItemClass =
   "flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5 py-2 text-xs font-medium";
 
 export function BottomTabBar() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const { userEmail, signOut } = useAuth();
@@ -50,7 +52,7 @@ export function BottomTabBar() {
           )}
         >
           <Home className="size-5" />
-          Properties
+          {t("nav.properties")}
         </Link>
         <Link
           to="/capture"
@@ -60,7 +62,7 @@ export function BottomTabBar() {
           )}
         >
           <Camera className="size-5" />
-          Capture
+          {t("nav.capture")}
         </Link>
         <Sheet>
           <SheetTrigger asChild>
@@ -69,13 +71,13 @@ export function BottomTabBar() {
               className={cn(tabItemClass, "text-muted-foreground")}
             >
               <Menu className="size-5" />
-              More
+              {t("nav.more")}
             </button>
           </SheetTrigger>
           <SheetContent side="bottom">
             <SheetHeader>
               <SheetTitle className="text-sm font-normal text-muted-foreground">
-                {userEmail ?? "Signed in"}
+                {userEmail ?? t("nav.signedInFallback")}
               </SheetTitle>
             </SheetHeader>
             <div className="flex flex-col gap-1 px-4">
@@ -84,7 +86,15 @@ export function BottomTabBar() {
                   to="/categories"
                   className="flex min-h-11 items-center rounded-md px-2 text-sm font-medium hover:bg-muted"
                 >
-                  Categories
+                  {t("nav.categories")}
+                </Link>
+              </SheetClose>
+              <SheetClose asChild>
+                <Link
+                  to="/settings"
+                  className="flex min-h-11 items-center rounded-md px-2 text-sm font-medium hover:bg-muted"
+                >
+                  {t("nav.settings")}
                 </Link>
               </SheetClose>
             </div>
@@ -95,7 +105,7 @@ export function BottomTabBar() {
                 className="w-full"
                 onClick={handleSignOut}
               >
-                Sign out
+                {t("nav.signOut")}
               </Button>
             </div>
           </SheetContent>

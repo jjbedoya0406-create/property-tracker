@@ -7,7 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoggedStamp } from "@/components/LoggedStamp";
+import { formatCurrency } from "@/lib/currency";
 import { toDisplayCase } from "@/lib/text";
+import { useTranslation } from "../../i18n/useTranslation";
+import { useSettings } from "../../portfolio/context";
 import { useCategories } from "../categories/hooks";
 import { useExpenses } from "./hooks";
 
@@ -15,12 +18,9 @@ interface ExpensesSectionProps {
   propertyId: string;
 }
 
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
-
 export function ExpensesSection({ propertyId }: ExpensesSectionProps) {
+  const { t } = useTranslation();
+  const { currency } = useSettings();
   const { data: expenses, isPending, isError, error } = useExpenses(propertyId);
   // Unfiltered (includes archived) so historical expenses still resolve a
   // name for categories that have since been archived (Story 1.6).
@@ -58,29 +58,29 @@ export function ExpensesSection({ propertyId }: ExpensesSectionProps) {
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between gap-3">
-        <CardTitle className="text-lg">Expenses</CardTitle>
+        <CardTitle className="text-lg">{t("expenses.title")}</CardTitle>
         <p className="tabular-nums">
-          <span className="text-muted-foreground">Total</span>{" "}
+          <span className="text-muted-foreground">{t("expenses.total")}</span>{" "}
           <span className="font-medium">
-            {currencyFormatter.format(runningTotal)}
+            {formatCurrency(runningTotal, currency)}
           </span>
         </p>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <Button asChild className="self-start">
-          <Link to={`/capture?propertyId=${propertyId}`}>Log expense</Link>
+          <Link to={`/capture?propertyId=${propertyId}`}>
+            {t("expenses.logButton")}
+          </Link>
         </Button>
 
         {isPending && (
-          <p className="text-muted-foreground">Loading expenses…</p>
+          <p className="text-muted-foreground">{t("expenses.loading")}</p>
         )}
         {isError && (
           <Alert variant="destructive">
             <AlertCircle />
             <AlertDescription>
-              {error instanceof Error
-                ? error.message
-                : "Failed to load expenses."}
+              {error instanceof Error ? error.message : t("expenses.loadError")}
             </AlertDescription>
           </Alert>
         )}
@@ -89,7 +89,7 @@ export function ExpensesSection({ propertyId }: ExpensesSectionProps) {
           <>
             <div className="flex flex-wrap items-end gap-3">
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="expenses-from">From</Label>
+                <Label htmlFor="expenses-from">{t("expenses.fromLabel")}</Label>
                 <Input
                   id="expenses-from"
                   type="date"
@@ -98,7 +98,7 @@ export function ExpensesSection({ propertyId }: ExpensesSectionProps) {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="expenses-to">To</Label>
+                <Label htmlFor="expenses-to">{t("expenses.toLabel")}</Label>
                 <Input
                   id="expenses-to"
                   type="date"
@@ -111,8 +111,8 @@ export function ExpensesSection({ propertyId }: ExpensesSectionProps) {
             {filtered.length === 0 ? (
               <p className="text-muted-foreground">
                 {(expenses ?? []).length === 0
-                  ? "No expenses yet — log one above to get started."
-                  : "No expenses in this date range."}
+                  ? t("expenses.emptyNoneYet")
+                  : t("expenses.emptyNoneInRange")}
               </p>
             ) : (
               <div className="divide-y divide-border rounded-lg border">
@@ -131,7 +131,7 @@ export function ExpensesSection({ propertyId }: ExpensesSectionProps) {
                         </span>
                         <span className="rounded-[6px] bg-category-pill px-2 py-0.5 text-[11px] text-category-pill-foreground">
                           {categoryNameById.get(expense.categoryId) ??
-                            "Unknown category"}
+                            t("expenses.unknownCategory")}
                         </span>
                       </div>
                     </div>
@@ -140,7 +140,7 @@ export function ExpensesSection({ propertyId }: ExpensesSectionProps) {
                         <LoggedStamp />
                       )}
                       <span className="tabular-nums font-medium">
-                        {currencyFormatter.format(expense.amount)}
+                        {formatCurrency(expense.amount, currency)}
                       </span>
                       {expense.receiptDriveUrl && (
                         <Button asChild variant="ghost" size="icon-sm">
@@ -148,7 +148,7 @@ export function ExpensesSection({ propertyId }: ExpensesSectionProps) {
                             href={expense.receiptDriveUrl}
                             target="_blank"
                             rel="noreferrer"
-                            aria-label="View receipt"
+                            aria-label={t("expenses.viewReceipt")}
                           >
                             <ExternalLink className="size-4" />
                           </a>

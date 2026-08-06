@@ -4,7 +4,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { categoryInputSchema, type CategoryInput } from "./schema";
+import { useTranslation } from "../../i18n/useTranslation";
+import { createCategoryInputSchema, type CategoryInput } from "./schema";
 
 interface CategoryFormProps {
   initialValues?: CategoryInput;
@@ -21,14 +22,15 @@ export function CategoryForm({
   onSubmit,
   onCancel,
 }: CategoryFormProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState(initialValues?.name ?? "");
   const [error, setError] = useState<string | null>(null);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    const result = categoryInputSchema.safeParse({ name });
+    const result = createCategoryInputSchema(t).safeParse({ name });
     if (!result.success) {
-      setError(result.error.issues[0]?.message ?? "Invalid input");
+      setError(result.error.issues[0]?.message ?? t("validation.invalidInput"));
       return;
     }
     setError(null);
@@ -38,7 +40,7 @@ export function CategoryForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="category-name">Name</Label>
+        <Label htmlFor="category-name">{t("categoryForm.nameLabel")}</Label>
         <Input
           id="category-name"
           value={name}
@@ -59,7 +61,7 @@ export function CategoryForm({
         </Button>
         {onCancel && (
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
+            {t("common.cancel")}
           </Button>
         )}
       </div>

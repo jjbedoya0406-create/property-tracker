@@ -2,6 +2,7 @@ import { Camera } from "lucide-react";
 import type { ChangeEvent } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "../../i18n/useTranslation";
 
 interface ReceiptCaptureInputProps {
   onCapture: (file: File) => void;
@@ -17,6 +18,8 @@ export function ReceiptCaptureInput({
   onCapture,
   disabled,
 }: ReceiptCaptureInputProps) {
+  const { t } = useTranslation();
+
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (file) {
@@ -34,7 +37,7 @@ export function ReceiptCaptureInput({
       )}
     >
       <Camera className="size-4" />
-      Take photo of receipt
+      {t("expenseForm.takePhotoButton")}
       <input
         type="file"
         accept="image/*"

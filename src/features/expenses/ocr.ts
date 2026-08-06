@@ -1,4 +1,5 @@
 import { createWorker } from "tesseract.js";
+import type { Currency, Language } from "../../types";
 
 export interface OcrGuess {
   vendor?: string;
@@ -6,11 +7,21 @@ export interface OcrGuess {
   date?: string;
 }
 
+const TESSERACT_LANGUAGE: Record<Language, string> = {
+  en: "eng",
+  es: "spa",
+};
+
 // On-device OCR (PRD §5) — no API keys, but lower accuracy than a cloud
 // service. Acceptable because every field here is user-editable before
-// saving (§6: "OCR is a shortcut, never a gate").
-export async function recognizeReceiptText(image: Blob): Promise<string> {
-  const worker = await createWorker("eng");
+// saving (§6: "OCR is a shortcut, never a gate"). Language picks the
+// Tesseract traineddata to use (Outcome 5, Story 5.3) — accuracy on
+// Spanish receipts is unverified, same accepted-risk framing as English.
+export async function recognizeReceiptText(
+  image: Blob,
+  language: Language,
+): Promise<string> {
+  const worker = await createWorker(TESSERACT_LANGUAGE[language]);
   try {
     const {
       data: { text },
@@ -21,12 +32,23 @@ export async function recognizeReceiptText(image: Blob): Promise<string> {
   }
 }
 
-const AMOUNT_PATTERN = /\$?\s?(\d{1,3}(?:,\d{3})*(?:\.\d{2}))/g;
+// USD receipts print "$1,234.56" (comma thousands, 2 decimals). COP
+// receipts print "$430.000" (period thousands, no decimals) — a
+// structurally different number, not just a different symbol. Reusing the
+// USD pattern on a COP receipt would land squarely in the 1000x misread
+// risk flagged in PRD §10.
+const AMOUNT_PATTERN_USD = /\$?\s?(\d{1,3}(?:,\d{3})*(?:\.\d{2}))/g;
+const AMOUNT_PATTERN_COP = /\$?\s?(\d{1,3}(?:\.\d{3})+)/g;
 const DATE_PATTERN = /(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/;
 
 // Best-effort heuristics only — receipts vary wildly in layout, so these are
-// starting guesses for the confirm screen, not a reliable parser.
-export function extractGuessesFromText(text: string): OcrGuess {
+// starting guesses for the confirm screen, not a reliable parser. `currency`
+// selects both the amount number format (see above) and the date field
+// order — US receipts print MM/DD, Colombian receipts print DD/MM.
+export function extractGuessesFromText(
+  text: string,
+  currency: Currency,
+): OcrGuess {
   const lines = text
     .split("\n")
     .map((line) => line.trim())
@@ -44,25 +66,38 @@ export function extractGuessesFromText(text: string): OcrGuess {
     .reverse()
     .find((line) => /\btotal\b/i.test(line) && !/sub[\s-]?total/i.test(line));
   const amountSource = totalLine ?? text;
-  const amounts = Array.from(amountSource.matchAll(AMOUNT_PATTERN)).map(
-    (match) => Number(match[1].replace(/,/g, "")),
+  const amountPattern =
+    currency === "COP" ? AMOUNT_PATTERN_COP : AMOUNT_PATTERN_USD;
+  const amounts = Array.from(amountSource.matchAll(amountPattern)).map(
+    (match) =>
+      currency === "COP"
+        ? Number(match[1].replace(/\./g, ""))
+        : Number(match[1].replace(/,/g, "")),
   );
   const amount = amounts.length > 0 ? Math.max(...amounts) : undefined;
 
   const dateMatch = text.match(DATE_PATTERN);
-  const date = dateMatch ? normalizeDate(dateMatch) : undefined;
+  const date = dateMatch
+    ? normalizeDate(dateMatch, currency === "COP" ? "DMY" : "MDY")
+    : undefined;
 
   return { vendor, amount, date };
 }
 
-// Assumes MM/DD/YYYY (common on US receipts) — a guess the user can correct.
-function normalizeDate(match: RegExpMatchArray): string | undefined {
-  const month = Number(match[1]);
-  const day = Number(match[2]);
+// `order` picks which field is the month vs the day — a guess the user can
+// correct either way.
+function normalizeDate(
+  match: RegExpMatchArray,
+  order: "MDY" | "DMY",
+): string | undefined {
+  const first = Number(match[1]);
+  const second = Number(match[2]);
   let year = Number(match[3]);
   if (year < 100) {
     year += 2000;
   }
+  const month = order === "MDY" ? first : second;
+  const day = order === "MDY" ? second : first;
   if (month < 1 || month > 12 || day < 1 || day > 31) {
     return undefined;
   }

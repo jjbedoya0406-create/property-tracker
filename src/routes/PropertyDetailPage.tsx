@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useTranslation } from "../i18n/useTranslation";
 import { ExpensesSection } from "../features/expenses/ExpensesSection";
 import { PropertyForm } from "../features/properties/PropertyForm";
 import {
@@ -14,6 +15,7 @@ import {
 } from "../features/properties/hooks";
 
 export function PropertyDetailPage() {
+  const { t } = useTranslation();
   const { propertyId } = useParams<{ propertyId: string }>();
   const { data: properties, isPending, isError, error } = useProperties();
   const updateProperty = useUpdateProperty();
@@ -33,18 +35,18 @@ export function PropertyDetailPage() {
         className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ChevronLeft className="size-4" />
-        My properties
+        {t("property.backLink")}
       </Link>
 
-      {isPending && <p className="text-muted-foreground">Loading…</p>}
+      {isPending && (
+        <p className="text-muted-foreground">{t("common.loading")}</p>
+      )}
 
       {isError && (
         <Alert variant="destructive">
           <AlertCircle />
           <AlertDescription>
-            {error instanceof Error
-              ? error.message
-              : "Failed to load property."}
+            {error instanceof Error ? error.message : t("property.loadError")}
           </AlertDescription>
         </Alert>
       )}
@@ -62,7 +64,7 @@ export function PropertyDetailPage() {
                   name: property.name,
                   address: property.address,
                 }}
-                submitLabel="Save changes"
+                submitLabel={t("common.saveChanges")}
                 isSubmitting={updateProperty.isPending}
                 onSubmit={(input) => {
                   updateProperty.mutate(
@@ -84,7 +86,7 @@ export function PropertyDetailPage() {
                     )}
                   </div>
                   {property.status === "archived" && (
-                    <Badge variant="secondary">Archived</Badge>
+                    <Badge variant="secondary">{t("common.archived")}</Badge>
                   )}
                 </div>
                 <div className="flex gap-2">
@@ -93,7 +95,7 @@ export function PropertyDetailPage() {
                     size="sm"
                     onClick={() => setIsEditing(true)}
                   >
-                    Edit
+                    {t("common.edit")}
                   </Button>
                   {property.status === "active" ? (
                     <Button
@@ -107,7 +109,7 @@ export function PropertyDetailPage() {
                         })
                       }
                     >
-                      Archive
+                      {t("common.archive")}
                     </Button>
                   ) : (
                     <Button
@@ -121,7 +123,7 @@ export function PropertyDetailPage() {
                         })
                       }
                     >
-                      Unarchive
+                      {t("common.unarchive")}
                     </Button>
                   )}
                 </div>

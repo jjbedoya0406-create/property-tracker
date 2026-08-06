@@ -4,7 +4,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { propertyInputSchema, type PropertyInput } from "./schema";
+import { useTranslation } from "../../i18n/useTranslation";
+import { createPropertyInputSchema, type PropertyInput } from "./schema";
 
 interface PropertyFormProps {
   initialValues?: PropertyInput;
@@ -21,15 +22,16 @@ export function PropertyForm({
   onSubmit,
   onCancel,
 }: PropertyFormProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState(initialValues?.name ?? "");
   const [address, setAddress] = useState(initialValues?.address ?? "");
   const [error, setError] = useState<string | null>(null);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    const result = propertyInputSchema.safeParse({ name, address });
+    const result = createPropertyInputSchema(t).safeParse({ name, address });
     if (!result.success) {
-      setError(result.error.issues[0]?.message ?? "Invalid input");
+      setError(result.error.issues[0]?.message ?? t("validation.invalidInput"));
       return;
     }
     setError(null);
@@ -39,7 +41,7 @@ export function PropertyForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="property-name">Name</Label>
+        <Label htmlFor="property-name">{t("propertyForm.nameLabel")}</Label>
         <Input
           id="property-name"
           value={name}
@@ -47,7 +49,9 @@ export function PropertyForm({
         />
       </div>
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="property-address">Address</Label>
+        <Label htmlFor="property-address">
+          {t("propertyForm.addressLabel")}
+        </Label>
         <Input
           id="property-address"
           value={address}
@@ -68,7 +72,7 @@ export function PropertyForm({
         </Button>
         {onCancel && (
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
+            {t("common.cancel")}
           </Button>
         )}
       </div>

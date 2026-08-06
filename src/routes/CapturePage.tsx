@@ -1,8 +1,10 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTranslation } from "../i18n/useTranslation";
 import { ExpenseForm } from "../features/expenses/ExpenseForm";
 
 export function CapturePage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const initialPropertyId = searchParams.get("propertyId") ?? undefined;
@@ -10,7 +12,7 @@ export function CapturePage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">Capture Receipt</CardTitle>
+        <CardTitle className="text-xl">{t("capture.title")}</CardTitle>
       </CardHeader>
       <CardContent>
         <ExpenseForm

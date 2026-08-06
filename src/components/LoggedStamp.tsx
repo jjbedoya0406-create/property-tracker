@@ -2,6 +2,7 @@ import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "../i18n/useTranslation";
 
 interface LoggedStampProps {
   className?: string;
@@ -12,6 +13,7 @@ interface LoggedStampProps {
 // a newly-saved row, settling into a quiet permanent checkmark after ~1.5s.
 // Purely decorative feedback — never blocks the UI.
 export function LoggedStamp({ className }: LoggedStampProps) {
+  const { t } = useTranslation();
   const prefersReducedMotion = usePrefersReducedMotion();
   const [settled, setSettled] = useState(prefersReducedMotion);
 
@@ -27,7 +29,7 @@ export function LoggedStamp({ className }: LoggedStampProps) {
   if (settled) {
     return (
       <Check
-        aria-label="Logged"
+        aria-label={t("loggedStamp.text")}
         className={cn("h-4 w-4 text-stamp", className)}
       />
     );
@@ -41,7 +43,7 @@ export function LoggedStamp({ className }: LoggedStampProps) {
         className,
       )}
     >
-      Logged
+      {t("loggedStamp.text")}
     </span>
   );
 }

@@ -7,7 +7,11 @@ import {
   getValues,
   updateValues,
 } from "../api/sheets/client";
-import { STARTER_CATEGORIES } from "../types";
+import {
+  SPANISH_STARTER_CATEGORIES,
+  STARTER_CATEGORIES,
+  type Settings,
+} from "../types";
 
 // One spreadsheet per Google account, found-or-created on sign-in — this is
 // what gives per-user data isolation without a database (PRD §8).
@@ -34,9 +38,15 @@ const EXPENSES_HEADER = [
   "edited_at",
 ];
 const CATEGORIES_HEADER = ["category_id", "name", "status", "created_at"];
+const SETTINGS_HEADER = ["language", "currency"];
 const EXPENSES_COLUMN_COUNT = EXPENSES_HEADER.length;
 const EXPENSES_CATEGORY_COLUMN_INDEX = EXPENSES_HEADER.indexOf("category");
 
+// Resolves (or creates) the base spreadsheet — Properties + Expenses only.
+// Categories and Settings are deliberately NOT ensured here: seeding the
+// right starter category list depends on the account's language (Outcome
+// 5), which isn't known until either an existing account's onboarding
+// picker resolves it or a new signup completes it — see applyOnboarding.
 export async function ensurePortfolioSpreadsheet(
   accessToken: string,
 ): Promise<string> {
@@ -46,16 +56,7 @@ export async function ensurePortfolioSpreadsheet(
     SPREADSHEET_MIME_TYPE,
   );
 
-  const spreadsheetId = existing
-    ? existing.id
-    : await createNewSpreadsheet(accessToken);
-
-  // Covers both brand-new accounts (no-ops, since createNewSpreadsheet
-  // already added it) and accounts created before the Categories tab
-  // existed (Story 1.6) — those get migrated in place here.
-  await ensureCategoriesTab(accessToken, spreadsheetId);
-
-  return spreadsheetId;
+  return existing ? existing.id : await createNewSpreadsheet(accessToken);
 }
 
 async function createNewSpreadsheet(accessToken: string): Promise<string> {
@@ -76,6 +77,38 @@ async function createNewSpreadsheet(accessToken: string): Promise<string> {
   return spreadsheet.spreadsheetId;
 }
 
+// Called once, when the onboarding language/currency picker is submitted —
+// by a brand-new account completing first-time setup, or an existing
+// (including already-Categories-migrated) account seeing Settings for the
+// first time after Outcome 5 shipped. Writes the Settings row and, only if
+// Categories doesn't already exist, seeds it with the chosen language's
+// starter list.
+export async function applyOnboarding(
+  accessToken: string,
+  spreadsheetId: string,
+  settings: Settings,
+): Promise<void> {
+  await ensureSettingsTab(accessToken, spreadsheetId, settings);
+  await ensureCategoriesTab(accessToken, spreadsheetId, settings.language);
+}
+
+async function ensureSettingsTab(
+  accessToken: string,
+  spreadsheetId: string,
+  settings: Settings,
+): Promise<void> {
+  const titles = await getSheetTitles(accessToken, spreadsheetId);
+  if (!titles.includes("Settings")) {
+    await addSheet(accessToken, spreadsheetId, "Settings");
+    await updateValues(accessToken, spreadsheetId, "Settings!A1:B1", [
+      SETTINGS_HEADER,
+    ]);
+  }
+  await updateValues(accessToken, spreadsheetId, "Settings!A2:B2", [
+    [settings.language, settings.currency],
+  ]);
+}
+
 interface SeededCategory {
   categoryId: string;
   name: string;
@@ -83,14 +116,18 @@ interface SeededCategory {
   createdAt: string;
 }
 
-// Adds the Categories tab to spreadsheets created before it existed, seeds
-// it with the starter list, and migrates existing Expense rows from
-// storing the category NAME directly to a category_id reference — matching
-// the new Expenses.category column meaning (PRD §8: "renaming a category
-// updates everywhere it's used"). No-op if the tab already exists.
+// Adds the Categories tab to spreadsheets that don't have it yet, seeds it
+// with the language-appropriate starter list (PRD §11: mom's own eight,
+// not a translation of Jason's five), and migrates any existing Expense
+// rows from storing the category NAME directly to a category_id reference
+// — matching the Expenses.category column meaning (PRD §8: "renaming a
+// category updates everywhere it's used"). No-op if the tab already exists
+// (e.g. an account that went through the pre-Outcome-5 Categories
+// migration already — its existing categories are left untouched).
 async function ensureCategoriesTab(
   accessToken: string,
   spreadsheetId: string,
+  language: Settings["language"],
 ): Promise<void> {
   const titles = await getSheetTitles(accessToken, spreadsheetId);
   if (titles.includes("Categories")) {
@@ -102,8 +139,10 @@ async function ensureCategoriesTab(
     CATEGORIES_HEADER,
   ]);
 
+  const starterNames =
+    language === "es" ? SPANISH_STARTER_CATEGORIES : STARTER_CATEGORIES;
   const now = new Date().toISOString();
-  const seeded: SeededCategory[] = STARTER_CATEGORIES.map((name) => ({
+  const seeded: SeededCategory[] = starterNames.map((name) => ({
     categoryId: crypto.randomUUID(),
     name,
     status: "active",
