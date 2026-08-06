@@ -46,10 +46,10 @@ These are reasonable v2+ candidates, not being ruled out — just not blocking v
 
 ## 4. Users
 
-| User | Portfolio size | Language | Currency | Notes |
-|---|---|---|---|---|
-| Jason | 2 properties | English | USD | Primary user, building this |
-| Jason's mom | 7 properties (units within a building — e.g. 301/302/303/304 at one address) | Spanish | COP | Secondary user; properties are in Colombia, currently tracked manually in Excel (see Sections 15-17) |
+| User        | Portfolio size                                                               | Language | Currency | Notes                                                                                                |
+| ----------- | ---------------------------------------------------------------------------- | -------- | -------- | ---------------------------------------------------------------------------------------------------- |
+| Jason       | 2 properties                                                                 | English  | USD      | Primary user, building this                                                                          |
+| Jason's mom | 7 properties (units within a building — e.g. 301/302/303/304 at one address) | Spanish  | COP      | Secondary user; properties are in Colombia, currently tracked manually in Excel (see Sections 15-17) |
 
 **Decided:** Each person logs into their own account and only sees their own properties. Two fully independent portfolios — no shared access, no "switch portfolio" concept needed. Simple per-user data isolation is sufficient.
 
@@ -60,6 +60,7 @@ These are reasonable v2+ candidates, not being ruled out — just not blocking v
 **Platform decision:** Build as a PWA, not a native iOS/Android app.
 
 **Why:**
+
 - Primary constraints are cost ($0 target) and this being a learning project — not scale, not sale
 - Two known users (self + mom), no App Store/Play Store distribution needed
 - Camera-for-still-photo (the core capture use case) is well-supported in mobile browsers today — the reliability gap between native and web camera APIs matters more for continuous/AR use cases, not "snap one photo of a receipt"
@@ -71,16 +72,16 @@ These are reasonable v2+ candidates, not being ruled out — just not blocking v
 
 **Stack decision:**
 
-| Layer | Choice | Why |
-|---|---|---|
-| Data storage | Google Sheets (via Google Sheets API) | $0, no account to stand up, human-readable — you can open the sheet directly if something needs debugging |
-| Receipt image storage | Google Drive (via Google Drive API) | $0, durable, naturally satisfies the "tax-audit-retrievable" bar in Outcome 3 |
-| Auth | Google OAuth ("Sign in with Google") | $0, no password system to build — replaces Story 1.1 entirely with an existing, trusted flow. You and your mom already have Google accounts. |
-| OCR | Tesseract.js (on-device, in-browser) | $0 guaranteed, no API keys/usage costs. Tradeoff: lower accuracy than a cloud OCR API — acceptable because OCR is a shortcut, never a gate (Section 6), so manual correction is already a built-in fallback |
-| Frontend framework | React | Widely-documented, strong PWA tooling, good fit for a learning project |
-| UI language (new) | Per-account setting: English or Spanish | Simple key-based string dictionary (not a general i18n framework) — a small, fixed set of UI strings translated once per language, selected by the signed-in account's language setting. $0, no translation service needed at this scale. |
-| OCR language (new) | Per-account: Tesseract English (`eng`) or Spanish (`spa`) traineddata | Tesseract supports Spanish, but it's a separate language pack from what's configured today — needs to be added and tested separately; Spanish OCR accuracy is unverified until tested against real receipts (see Section 10 risks) |
-| Currency formatting (new) | Per-account: USD or COP display formatting | COP is conventionally shown with no decimal places and a period as the thousands separator (e.g. `$430.000`), unlike USD's comma-thousands/decimal-cents format — this is a display/parsing rule, not a currency conversion (no exchange-rate logic; each account's amounts are simply denominated and shown in that account's currency) |
+| Layer                     | Choice                                                                | Why                                                                                                                                                                                                                                                                                                                                      |
+| ------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Data storage              | Google Sheets (via Google Sheets API)                                 | $0, no account to stand up, human-readable — you can open the sheet directly if something needs debugging                                                                                                                                                                                                                                |
+| Receipt image storage     | Google Drive (via Google Drive API)                                   | $0, durable, naturally satisfies the "tax-audit-retrievable" bar in Outcome 3                                                                                                                                                                                                                                                            |
+| Auth                      | Google OAuth ("Sign in with Google")                                  | $0, no password system to build — replaces Story 1.1 entirely with an existing, trusted flow. You and your mom already have Google accounts.                                                                                                                                                                                             |
+| OCR                       | Tesseract.js (on-device, in-browser)                                  | $0 guaranteed, no API keys/usage costs. Tradeoff: lower accuracy than a cloud OCR API — acceptable because OCR is a shortcut, never a gate (Section 6), so manual correction is already a built-in fallback                                                                                                                              |
+| Frontend framework        | React                                                                 | Widely-documented, strong PWA tooling, good fit for a learning project                                                                                                                                                                                                                                                                   |
+| UI language (new)         | Per-account setting: English or Spanish                               | Simple key-based string dictionary (not a general i18n framework) — a small, fixed set of UI strings translated once per language, selected by the signed-in account's language setting. $0, no translation service needed at this scale.                                                                                                |
+| OCR language (new)        | Per-account: Tesseract English (`eng`) or Spanish (`spa`) traineddata | Tesseract supports Spanish, but it's a separate language pack from what's configured today — needs to be added and tested separately; Spanish OCR accuracy is unverified until tested against real receipts (see Section 10 risks)                                                                                                       |
+| Currency formatting (new) | Per-account: USD or COP display formatting                            | COP is conventionally shown with no decimal places and a period as the thousands separator (e.g. `$430.000`), unlike USD's comma-thousands/decimal-cents format — this is a display/parsing rule, not a currency conversion (no exchange-rate logic; each account's amounts are simply denominated and shown in that account's currency) |
 
 **Known tradeoff, accepted deliberately:** Sheets is not a real database — no enforced schema, no transactions, easier for a bad write to silently corrupt a row than with Postgres/similar. At this scale (2 users, ~9 properties) this is a small, acceptable risk in exchange for $0 cost and a much simpler setup. Revisit if the project ever grows past "just us."
 
@@ -98,6 +99,7 @@ These are reasonable v2+ candidates, not being ruled out — just not blocking v
 ## 7. Functional Requirements — MVP, by Outcome
 
 ### Outcome 1: Manage my properties
+
 - [ ] Sign in with Google (OAuth) — no custom password system
 - [ ] Add a property (name, address, at minimum)
 - [ ] Edit a property's details
@@ -107,11 +109,13 @@ These are reasonable v2+ candidates, not being ruled out — just not blocking v
 - [ ] Archiving a category follows the same soft-delete pattern as archiving a property (Story 1.4): existing expenses keep their category, archived categories just stop appearing as options for new expenses
 
 ### Outcome 2: See my properties
+
 - [ ] View list of all active properties in portfolio
 - [ ] View a single property's detail (basic info + its expenses, once Outcome 3 exists)
 - [ ] Distinguish active vs. archived properties in the view
 
 ### Outcome 3: Capture a receipt, tied to the right property, tax-durable
+
 - [ ] Camera capture flow for receipts
 - [ ] OCR extraction of vendor, amount, date from receipt image
 - [ ] Manual edit/override of any OCR-extracted field (OCR is a shortcut, never a gate — bad read shouldn't block saving)
@@ -123,6 +127,7 @@ These are reasonable v2+ candidates, not being ruled out — just not blocking v
 - [ ] Per-property running total of expenses
 
 ### Outcome 4: See a tax-year expense summary
+
 - [ ] Year selector on the property detail view, defaulting to the current calendar year
 - [ ] Total clearly labeled with the year it reflects (e.g. "2026 total: $X") — replaces the current unlabeled "Total," which is ambiguous about what period it covers
 - [ ] Category breakdown: each category (from the Outcome 1 starter list) shown with its own subtotal for the selected year
@@ -130,6 +135,7 @@ These are reasonable v2+ candidates, not being ruled out — just not blocking v
 - [ ] The existing From/To custom date filter (Outcome 3 requirements) remains available as a separate, secondary filter — not replaced by the year selector, since ad hoc range questions are a different need than the tax-year view
 
 ### Outcome 5: Use the app in Spanish, with Colombian pesos
+
 - [ ] Language setting per account (English/Spanish), set at account creation or in account settings
 - [ ] All UI strings (buttons, labels, headers, empty states, error messages) available in Spanish, applied when the account's language is set to Spanish
 - [ ] Currency setting per account (USD/COP), independent of language (though in practice mom's account uses both Spanish + COP together)
@@ -138,6 +144,7 @@ These are reasonable v2+ candidates, not being ruled out — just not blocking v
 - [ ] Starter category defaults for Spanish accounts use mom's own eight categories (Section 11) as the seeded starting point — a distinct set from Jason's five, not a translation of it, and fully editable afterward (Story 1.6) like any account's categories
 
 ### Outcome 6: Track rental income and occupancy
+
 - [ ] Log a rent payment: property, amount, date received — mirrors the "Money In" data Jason's mom currently tracks in Excel
 - [ ] Per-property income list, similar in structure to the existing expense list (Outcome 3)
 - [ ] Record a tenancy/contract per property: contract start date, expected end date, actual move-out date (captured separately from expected end — the gap between them is meaningful, e.g. early departure or overstay)
@@ -147,6 +154,7 @@ These are reasonable v2+ candidates, not being ruled out — just not blocking v
 - [ ] Property model supports multiple units at the same address (e.g. unit 301, 302 at one building) — confirm this is adequately handled by the existing name+address fields (Story 1.2) rather than requiring a building/unit hierarchy
 
 ### Should-have (v1 if feasible, else immediately post-v1)
+
 - [ ] Edit/delete an already-saved expense
 - [ ] Search/filter expenses by category or vendor
 - [ ] Export a property's expense list (CSV at minimum)
@@ -156,67 +164,73 @@ These are reasonable v2+ candidates, not being ruled out — just not blocking v
 Each user gets their own spreadsheet (created on first login, tied to their Google account — this is what gives us the per-user isolation from Story 1.1 without building custom auth).
 
 **Tab: `Categories` (new)**
-| Column | Notes |
-|---|---|
-| category_id | Unique ID |
-| name | Editable — starter list pre-populated on account creation, user can add/rename/archive from there |
-| status | `active` or `archived` — same soft-delete pattern as `Properties` (Story 1.4) |
-| created_at | |
+
+| Column      | Notes                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------------- |
+| category_id | Unique ID                                                                                         |
+| name        | Editable — starter list pre-populated on account creation, user can add/rename/archive from there |
+| status      | `active` or `archived` — same soft-delete pattern as `Properties` (Story 1.4)                     |
+| created_at  |                                                                                                   |
 
 Replaces the earlier assumption of a fixed, hardcoded category list. Each account gets its own `Categories` tab, seeded with sensible defaults on first setup (Jason's five, or mom's eight — see Section 11), fully editable afterward.
 
 **Tab: `Properties`**
-| Column | Notes |
-|---|---|
+
+| Column      | Notes                            |
+| ----------- | -------------------------------- |
 | property_id | Unique ID, generated on creation |
-| name | Required |
-| address | Optional |
-| status | `active` or `archived` |
-| created_at | |
+| name        | Required                         |
+| address     | Optional                         |
+| status      | `active` or `archived`           |
+| created_at  |                                  |
 
 **Tab: `Expenses`**
-| Column | Notes |
-|---|---|
-| expense_id | Unique ID |
-| property_id | Links to a row in `Properties` |
-| amount | |
-| date | |
-| vendor | |
-| category | Links to a row in `Categories` — renaming a category updates everywhere it's used; archiving doesn't affect past expenses |
-| notes | Free text — new, matches the Notes column in mom's current Excel workflow |
-| receipt_drive_url | Link to the image file in Google Drive |
-| source | `ocr` or `manual` |
-| created_at | |
-| edited_at | |
+
+| Column            | Notes                                                                                                                     |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| expense_id        | Unique ID                                                                                                                 |
+| property_id       | Links to a row in `Properties`                                                                                            |
+| amount            |                                                                                                                           |
+| date              |                                                                                                                           |
+| vendor            |                                                                                                                           |
+| category          | Links to a row in `Categories` — renaming a category updates everywhere it's used; archiving doesn't affect past expenses |
+| notes             | Free text — new, matches the Notes column in mom's current Excel workflow                                                 |
+| receipt_drive_url | Link to the image file in Google Drive                                                                                    |
+| source            | `ocr` or `manual`                                                                                                         |
+| created_at        |                                                                                                                           |
+| edited_at         |                                                                                                                           |
 
 **Tab: `Settings` (new)**
-| Column | Notes |
-|---|---|
-| language | `en` or `es` |
+
+| Column   | Notes          |
+| -------- | -------------- |
+| language | `en` or `es`   |
 | currency | `USD` or `COP` |
 
 One row per spreadsheet (i.e. per user) — this is what drives Outcome 5's per-account language/currency/OCR behavior.
 
 **Tab: `Income` (new)**
-| Column | Notes |
-|---|---|
-| income_id | Unique ID |
-| property_id | Links to a row in `Properties` |
-| amount | |
-| date_received | |
-| notes | |
-| created_at | |
+
+| Column        | Notes                          |
+| ------------- | ------------------------------ |
+| income_id     | Unique ID                      |
+| property_id   | Links to a row in `Properties` |
+| amount        |                                |
+| date_received |                                |
+| notes         |                                |
+| created_at    |                                |
 
 **Tab: `Occupancy` (new)**
-| Column | Notes |
-|---|---|
-| occupancy_id | Unique ID |
-| property_id | Links to a row in `Properties` |
-| contract_start | |
-| contract_end_expected | |
-| actual_move_out | Nullable until the tenant actually leaves |
-| monthly_rent | Needed to later translate vacant days into a dollar figure |
-| created_at | |
+
+| Column                | Notes                                                      |
+| --------------------- | ---------------------------------------------------------- |
+| occupancy_id          | Unique ID                                                  |
+| property_id           | Links to a row in `Properties`                             |
+| contract_start        |                                                            |
+| contract_end_expected |                                                            |
+| actual_move_out       | Nullable until the tenant actually leaves                  |
+| monthly_rent          | Needed to later translate vacant days into a dollar figure |
+| created_at            |                                                            |
 
 **Why separate tabs for Income and Occupancy rather than folding into `Properties`:** a property can have multiple tenancies over time (new tenant every year, for instance), so this needs to be a repeating record like `Expenses`, not fixed fields on the property itself.
 
@@ -232,15 +246,15 @@ Since this is a personal tool first, "success" is qualitative at v1, but worth d
 
 ## 10. Risks / Open Questions
 
-| # | Risk/Question | Why it matters |
-|---|---|---|
-| 1 | **Open access — no allowlist yet.** As deployed, any Google account can sign in and create a portfolio. Fix spec'd in Story 1.1; needs to be built and deployed before this link is shared further. | The app is live at a public URL right now — this is an active gap, not a theoretical one |
-| 2 | OCR accuracy on real-world receipts (faded, handwritten, crumpled) | Directly determines whether this saves time or adds a correction chore |
-| 3 | Where are receipt images stored, and for how long? | Resolved — Google Drive, per Section 5. Durable and outlives the app itself if maintenance ever stops. |
-| 4 | Offline capture (property with bad cell signal) | Common real-world scenario for rental properties; not addressed yet in this draft |
-| 5 | Sheets has no enforced schema or transactions | A bad write (bug, race condition, manual edit) could corrupt a row silently — accepted risk at this scale, per Section 5 |
-| 6 | Spanish OCR accuracy is unverified | Tesseract.js supports Spanish, but it hasn't been tested against real Colombian receipts — accuracy could differ meaningfully from the English path already in use. Worth a real test pass with sample Spanish receipts before trusting it, same as the earlier English test-receipt exercise. |
-| 7 | COP amounts risk parsing errors if OCR/manual entry assumes USD-style formatting | COP conventionally has no decimal places and uses a period as the thousands separator (e.g. `$430.000` = 430,000 pesos, not $430.00) — if the app's amount parser assumes US formatting by default, COP amounts could be silently misread by a factor of 1,000 |
+| #   | Risk/Question                                                                                                                                                                                       | Why it matters                                                                                                                                                                                                                                                                                 |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Open access — no allowlist yet.** As deployed, any Google account can sign in and create a portfolio. Fix spec'd in Story 1.1; needs to be built and deployed before this link is shared further. | The app is live at a public URL right now — this is an active gap, not a theoretical one                                                                                                                                                                                                       |
+| 2   | OCR accuracy on real-world receipts (faded, handwritten, crumpled)                                                                                                                                  | Directly determines whether this saves time or adds a correction chore                                                                                                                                                                                                                         |
+| 3   | Where are receipt images stored, and for how long?                                                                                                                                                  | Resolved — Google Drive, per Section 5. Durable and outlives the app itself if maintenance ever stops.                                                                                                                                                                                         |
+| 4   | Offline capture (property with bad cell signal)                                                                                                                                                     | Common real-world scenario for rental properties; not addressed yet in this draft                                                                                                                                                                                                              |
+| 5   | Sheets has no enforced schema or transactions                                                                                                                                                       | A bad write (bug, race condition, manual edit) could corrupt a row silently — accepted risk at this scale, per Section 5                                                                                                                                                                       |
+| 6   | Spanish OCR accuracy is unverified                                                                                                                                                                  | Tesseract.js supports Spanish, but it hasn't been tested against real Colombian receipts — accuracy could differ meaningfully from the English path already in use. Worth a real test pass with sample Spanish receipts before trusting it, same as the earlier English test-receipt exercise. |
+| 7   | COP amounts risk parsing errors if OCR/manual entry assumes USD-style formatting                                                                                                                    | COP conventionally has no decimal places and uses a period as the thousands separator (e.g. `$430.000` = 430,000 pesos, not $430.00) — if the app's amount parser assumes US formatting by default, COP amounts could be silently misread by a factor of 1,000                                 |
 
 ## 11. Open Decisions Needed From You
 
@@ -250,6 +264,7 @@ Since this is a personal tool first, "success" is qualitative at v1, but worth d
 **Resolved (Jason's account):** Starter category list is Repairs & Maintenance, Insurance, Utilities, Property Management Fees, Cleaning. Worth revisiting before tax season if you want closer alignment to Schedule E buckets (e.g., splitting capital improvements out from repairs matters for depreciation vs. expense treatment) — noted here, not blocking v1. This is Jason's Schedule E context specifically; it doesn't apply to mom's Colombia properties, which are a separate tax context entirely (see Section 3 non-goals).
 
 **Resolved (mom's account) — starter defaults, fully editable from there (Story 1.6), confirmed from her existing Excel — not a translation of Jason's list, a distinct starting point:**
+
 - EMCALI (electricity)
 - Gases de Occidente (gas)
 - Claro Hogar (phone/internet)
@@ -263,9 +278,10 @@ Eight categories, not five — genuinely different from Jason's list, not a Span
 
 ## 12. Acceptance Criteria — Outcome 1: Manage My Properties
 
-*Criteria for the other two outcomes will be added once we get to them. This is the first buildable slice — nothing here depends on OCR, categories-at-capture, or any Outcome 3 complexity.*
+_Criteria for the other two outcomes will be added once we get to them. This is the first buildable slice — nothing here depends on OCR, categories-at-capture, or any Outcome 3 complexity._
 
 ### Story 1.1 — Sign in with Google
+
 **As a** user, **I want** to sign in with my Google account **so that** I only ever see my own portfolio, never someone else's, without needing to manage a separate password.
 
 - **Given** I'm on the allowed list (currently: you and your mom's email addresses), **when** I sign in with Google for the first time, **then** a new spreadsheet is created and linked to my account, and I land in my (empty) portfolio.
@@ -276,6 +292,7 @@ Eight categories, not five — genuinely different from Jason's list, not a Span
 - **Implementation note:** the allowed-email list should be an environment variable (e.g. in Vercel), never hardcoded into a committed source file.
 
 ### Story 1.2 — Add a property
+
 **As a** user, **I want** to add a property to my portfolio **so that** I have somewhere to assign expenses to later.
 
 - **Given** I'm logged in, **when** I choose to add a property and enter at least a name, **then** the property is saved and appears in my portfolio.
@@ -283,12 +300,14 @@ Eight categories, not five — genuinely different from Jason's list, not a Span
 - **Given** I've added a property, **when** I view my portfolio, **then** the new property appears immediately without needing to refresh/reload.
 
 ### Story 1.3 — Edit a property
+
 **As a** user, **I want** to edit a property's details **so that** I can correct mistakes or update info (e.g., address change).
 
 - **Given** an existing property, **when** I edit its name or address and save, **then** the changes are reflected everywhere the property appears (list view, detail view).
 - **Given** I edit a property, **when** I clear the name field entirely and try to save, **then** I get a validation error (name can't be blank) and the prior value is preserved.
 
 ### Story 1.4 — Archive a property
+
 **As a** user, **I want** to archive a property I no longer manage **so that** it's out of my active view but its historical expense data isn't lost.
 
 - **Given** an active property with existing expenses, **when** I archive it, **then** it no longer appears in my default/active property list, but its expense history remains intact and accessible.
@@ -297,12 +316,14 @@ Eight categories, not five — genuinely different from Jason's list, not a Span
 - Archiving is a soft-delete only — there is no hard-delete of a property with expense history in v1 (prevents accidental permanent loss of tax-relevant records).
 
 ### Story 1.5 — Starter category list provisioning
+
 **As a** user, **I want** the app to give me a starter expense category list when I set up **so that** I don't have to invent categories myself before I can log an expense.
 
 - **Given** I'm a new user setting up my portfolio, **when** setup completes, **then** the five starter categories (Repairs & Maintenance, Insurance, Utilities, Property Management Fees, Cleaning) are available for use — no manual configuration required.
 - **Given** the starter categories exist, **when** I'm elsewhere in the app (this becomes testable once Outcome 3 is built), **then** these are the categories offered when assigning an expense.
 
 ### Story 1.6 — Manage categories
+
 **As a** user, **I want** to add, rename, and archive my own categories **so that** the app fits how I actually track expenses, not just the defaults it shipped with.
 
 - **Given** I'm logged in, **when** I add a new category with a name, **then** it's saved and immediately available when assigning an expense.
@@ -312,9 +333,10 @@ Eight categories, not five — genuinely different from Jason's list, not a Span
 
 ## 13. Acceptance Criteria — Outcome 2: See My Properties
 
-*Depends on Outcome 1 (properties must exist to be viewed). No dependency on Outcome 3 — property detail views work with zero expenses, since Outcome 3 hasn't been built yet at this point in the build order.*
+_Depends on Outcome 1 (properties must exist to be viewed). No dependency on Outcome 3 — property detail views work with zero expenses, since Outcome 3 hasn't been built yet at this point in the build order._
 
 ### Story 2.1 — View property list
+
 **As a** user, **I want** to see all my active properties in one place **so that** I can confirm my portfolio is set up correctly.
 
 - **Given** I have one or more active properties, **when** I open the app, **then** I see a list of all my active properties, each showing at minimum its name.
@@ -322,12 +344,14 @@ Eight categories, not five — genuinely different from Jason's list, not a Span
 - **Given** I have both active and archived properties, **when** I view the default list, **then** only active properties are shown.
 
 ### Story 2.2 — View a single property's detail
+
 **As a** user, **I want** to open a specific property **so that** I can see its full details and (once Outcome 3 exists) its expense history.
 
 - **Given** an active property, **when** I select it from the list, **then** I see its detail view showing its name and address.
 - **Given** a property with no expenses yet, **when** I view its detail, **then** the expense section shows an empty state, not an error — this must work correctly before Outcome 3 is built, since the property detail view exists ahead of expense capture in the build order.
 
 ### Story 2.3 — Distinguish active vs. archived properties
+
 **As a** user, **I want** to tell at a glance whether a property is active or archived **so that** I don't confuse a retired property with one I'm still managing.
 
 - **Given** I have archived properties, **when** I look at my portfolio, **then** archived properties are not mixed into the default active view (per Story 1.4/2.1).
@@ -335,9 +359,10 @@ Eight categories, not five — genuinely different from Jason's list, not a Span
 
 ## 14. Acceptance Criteria — Outcome 4: See a Tax-Year Expense Summary
 
-*Depends on Outcome 3 (there must be expenses to summarize). This is where the app's tax-purposes promise actually gets delivered — capture alone doesn't help at filing time without this.*
+_Depends on Outcome 3 (there must be expenses to summarize). This is where the app's tax-purposes promise actually gets delivered — capture alone doesn't help at filing time without this._
 
 ### Story 4.1 — Tax-year total per property
+
 **As a** user, **I want** to see how much I spent on a property in a given tax year **so that** I have the number I need at filing time without adding it up by hand.
 
 - **Given** a property with expenses, **when** I view its detail page, **then** I see a total explicitly labeled with the year it covers (e.g. "2026 total: $1,240"), not an unlabeled "Total."
@@ -346,25 +371,27 @@ Eight categories, not five — genuinely different from Jason's list, not a Span
 - **Given** a property with zero expenses in the selected year, **when** I view the total, **then** it shows $0 for that year, not an error or a blank state.
 
 ### Story 4.2 — Spend by category
+
 **As a** user, **I want** to see my spend broken down by category for the selected year **so that** I understand where money went and have it pre-sorted the way my tax categories expect.
 
 - **Given** a property with expenses across multiple categories in the selected year, **when** I view the category breakdown, **then** each category (from the Outcome 1 starter list) shows its own subtotal for that year.
 - **Given** a category with no expenses in the selected year, **when** I view the breakdown, **then** that category either shows $0 or is omitted — exact treatment is a UI decision, not specified here, but it must not be silently missing without explanation.
 - **Given** I switch the year selector, **when** the total recalculates (Story 4.1), **then** the category breakdown recalculates to match the same year — the two numbers must never be out of sync with each other.
 
-*(Open, not blocking: whether the category breakdown also respects the existing custom From/To date filter, or is scoped to the year selector only, is not yet decided — currently spec'd as year-selector-only for simplicity.)*
+_(Open, not blocking: whether the category breakdown also respects the existing custom From/To date filter, or is scoped to the year selector only, is not yet decided — currently spec'd as year-selector-only for simplicity.)_
 
 ## 15. Future Considerations — History
 
 **Occupancy / vacancy tracking — promoted to Outcome 6 (Aug 2026).** Originally parked here as a v2 candidate. Jason's mom independently requested the same capability, already tracks it manually in Excel, and the request was formalized into real requirements (Section 7) and acceptance criteria (Section 17) rather than staying speculative. Original reasoning preserved below for context.
 
-*Original note: track date ranges per property for rented vs. vacant periods, plus the property's rent rate — vacancy days alone don't produce a dollar figure; the rate is what turns "14 vacant days" into a number a CPA can actually use for the loss calculation. The exact tax treatment of vacancy periods (holding-out-for-rent status, personal-use-day limits, passive loss rules) remains CPA territory, not something this app asserts — its job is accurate record-keeping (dates and rate), not tax conclusions.*
+_Original note: track date ranges per property for rented vs. vacant periods, plus the property's rent rate — vacancy days alone don't produce a dollar figure; the rate is what turns "14 vacant days" into a number a CPA can actually use for the loss calculation. The exact tax treatment of vacancy periods (holding-out-for-rent status, personal-use-day limits, passive loss rules) remains CPA territory, not something this app asserts — its job is accurate record-keeping (dates and rate), not tax conclusions._
 
 ## 16. Acceptance Criteria — Outcome 5: Spanish UI + COP
 
-*Depends on Outcomes 1-4 already existing (this localizes them, doesn't replace them). Applies per-account — Jason's account is unaffected; only accounts with `language: es` / `currency: COP` in Settings see this behavior.*
+_Depends on Outcomes 1-4 already existing (this localizes them, doesn't replace them). Applies per-account — Jason's account is unaffected; only accounts with `language: es` / `currency: COP` in Settings see this behavior._
 
 ### Story 5.1 — Language setting
+
 **As a** Spanish-speaking user, **I want** the entire app in Spanish **so that** I can use it the way I actually think, not translate in my head as I go.
 
 - **Given** an account with `language: es` in Settings, **when** any screen loads, **then** all UI text (buttons, labels, headers, empty states, validation and error messages) appears in Spanish.
@@ -372,6 +399,7 @@ Eight categories, not five — genuinely different from Jason's list, not a Span
 - **Given** a starter category is shown (Story 1.5), **when** the account language is Spanish, **then** the account seeds with its own starter defaults (Section 11: EMCALI, Gases de Occidente, Claro Hogar, Limpieza Áreas Comunes, Implementos de Limpieza, Administración 10%, Arreglos - Mano de Obra, Arreglos - Materiales) — a distinct, more granular starting point confirmed from her existing Excel workflow, not a Spanish translation of Jason's five-category list. Like any account, she can add, rename, or archive from there (Story 1.6).
 
 ### Story 5.2 — Currency setting
+
 **As a** user with COP-denominated properties, **I want** amounts entered and shown in pesos, formatted the way pesos are actually written **so that** the numbers look right and I don't misread them.
 
 - **Given** an account with `currency: COP`, **when** an amount is displayed anywhere in the app, **then** it's formatted with no decimal places and a period as the thousands separator (e.g. `$430.000`), not USD-style formatting.
@@ -379,23 +407,26 @@ Eight categories, not five — genuinely different from Jason's list, not a Span
 - **Given** an account with `currency: USD` (Jason's), **when** amounts are displayed, **then** formatting is unchanged from current v1 behavior.
 
 ### Story 5.3 — Spanish OCR
+
 **As a** user capturing Spanish-language receipts, **I want** OCR to actually read them correctly **so that** capture is still faster than manual entry, not slower.
 
 - **Given** an account with `language: es`, **when** a receipt photo is captured, **then** OCR runs using Spanish-language Tesseract data, not English.
 - **Given** OCR misreads a Spanish receipt (expected, per Section 10 risk — accuracy unverified), **when** the user reaches the confirm screen, **then** the same manual-correction fallback from Outcome 3 applies — OCR is still a shortcut, never a gate, regardless of language.
-- *(Not yet done: a real test pass with sample Spanish-language receipts, similar to the English test-receipt set already generated, is needed before trusting this in production.)*
+- _(Not yet done: a real test pass with sample Spanish-language receipts, similar to the English test-receipt set already generated, is needed before trusting this in production.)_
 
 ## 17. Acceptance Criteria — Outcome 6: Rental Income and Occupancy
 
-*Depends on Outcome 1 (properties must exist). Independent of Outcomes 3-5 — income/occupancy data doesn't require expenses or OCR to exist first.*
+_Depends on Outcome 1 (properties must exist). Independent of Outcomes 3-5 — income/occupancy data doesn't require expenses or OCR to exist first._
 
 ### Story 6.1 — Log rent income
+
 **As a** landlord, **I want** to log rent payments per property **so that** I can see income the same way I see expenses.
 
 - **Given** a property, **when** I log an income entry with amount and date received, **then** it's saved and associated with that property, mirroring how expenses work (Outcome 3).
 - **Given** a property with logged income, **when** I view its detail, **then** I see an income list alongside (not replacing) the expense list.
 
 ### Story 6.2 — Track tenancy dates
+
 **As a** landlord, **I want** to record when a tenant's contract starts, when it's expected to end, and when they actually leave **so that** I can see the difference between planned and actual, and account for vacant time.
 
 - **Given** a property, **when** I record a new tenancy, **then** I can enter contract start date, expected end date, and (later, once known) actual move-out date.
@@ -404,12 +435,14 @@ Eight categories, not five — genuinely different from Jason's list, not a Span
 - **Given** a tenancy record, **when** I create it, **then** I also record the monthly rent for that tenancy (needed later to value vacant time).
 
 ### Story 6.3 — Income/expense summary
+
 **As a** landlord, **I want** to see income and expenses together for a property **so that** I can see money left over, the way I currently calculate it by hand in Excel.
 
 - **Given** a property with both income and expense entries, **when** I view its summary, **then** I see income total, expense total, and the difference (income minus expenses) — mirroring the "Money In / Money Out / Money Left Over" structure from the existing Excel workflow.
-- *(Open, not blocking: whether this summary is scoped to the Outcome 4 tax-year selector or a separate/custom range is Section 11 open decision #4 — not yet resolved.)*
+- _(Open, not blocking: whether this summary is scoped to the Outcome 4 tax-year selector or a separate/custom range is Section 11 open decision #4 — not yet resolved.)_
 
 ### Story 6.4 — Expense notes
+
 **As a** landlord, **I want** to add a free-text note to an expense **so that** I can record context that doesn't fit into vendor/category/amount (e.g. "paint for unit 304 walls and ceiling").
 
 - **Given** the expense capture or edit flow, **when** I add or edit an expense, **then** I can enter and save a free-text note field, matching the Notes column already in use in the Excel workflow.

@@ -12,17 +12,17 @@ This is a personal ledger, not a fintech dashboard. The subject is genuinely acc
 
 ## Color
 
-| Token            | Hex       | Use                                                                                                        |
-| ---------------- | --------- | ---------------------------------------------------------------------------------------------------------- |
-| `--bg-ledger`    | `#EFF3EC` | App background — pale ledger-paper green, not stark white                                                  |
-| `--surface`      | `#FFFFFF` | Cards, elevated surfaces on top of the ledger background                                                   |
-| `--ink`          | `#24302B` | Primary text — a soft green-black, not pure black                                                          |
-| `--ink-muted`    | `#5B685F` | Secondary text, captions, metadata                                                                         |
-| `--rule`         | `#D3DCD1` | Hairline dividers between list rows — literal ledger lines                                                 |
-| `--action`       | `#2F5233` | Primary actions, active states — deep ledger-ink green                                                     |
-| `--action-hover` | `#25401F` | Hover/pressed state for primary actions                                                                    |
-| `--stamp`        | `#2B3A55` | The signature "LOGGED" stamp mark only — deep stamp-ink navy. Not used anywhere else, so it stays special. |
-| `--error`        | `#A13D2F` | Validation errors, destructive actions only                                                                |
+| Token | Hex | Use |
+|---|---|---|
+| `--bg-ledger` | `#EFF3EC` | App background — pale ledger-paper green, not stark white |
+| `--surface` | `#FFFFFF` | Cards, elevated surfaces on top of the ledger background |
+| `--ink` | `#24302B` | Primary text — a soft green-black, not pure black |
+| `--ink-muted` | `#5B685F` | Secondary text, captions, metadata |
+| `--rule` | `#D3DCD1` | Hairline dividers between list rows — literal ledger lines |
+| `--action` | `#2F5233` | Primary actions, active states — deep ledger-ink green |
+| `--action-hover` | `#25401F` | Hover/pressed state for primary actions |
+| `--stamp` | `#2B3A55` | The signature "LOGGED" stamp mark only — deep stamp-ink navy. Not used anywhere else, so it stays special. |
+| `--error` | `#A13D2F` | Validation errors, destructive actions only |
 
 **Why not the obvious fintech palette:** avoiding warm-cream-plus-terracotta and near-black-plus-neon — both read as generic AI-generated defaults right now, not as choices made for this app. The ledger-green background and stamp-navy accent come directly from the "paper ledger" concept instead.
 
@@ -33,6 +33,18 @@ This is a personal ledger, not a fintech dashboard. The subject is genuinely acc
 - **Body / UI text:** a clean humanist sans (e.g. Inter or system-ui stack) — legibility is non-negotiable given the two-user audience. Set body text no smaller than 15px on mobile.
 - **Amounts (dollar figures):** use **tabular figures** (`font-variant-numeric: tabular-nums`) wherever amounts appear in a list — this is a real content-driven choice, not decoration: numbers in a ledger need to align vertically like a real ledger column.
 - **Headings/property names:** same sans family, medium weight, no separate display face — this app doesn't need a "hero" typographic moment, it needs to stay out of the way of the data.
+
+---
+
+## Navigation — Locked (Aug 2026)
+
+**Pattern: bottom tab bar (3 tabs) + a "More" sheet for everything else.**
+
+- **Tabs:** Properties, Capture, More. Exactly these three, permanently — this was decided deliberately over a flat tab bar with one tab per section, because the section count is expected to keep growing (Categories shipped; Income and Occupancy are coming in Outcome 6) and Apple's own HIG guidance caps a plain tab bar around 5 before it strains. Three leaves permanent headroom.
+- **Properties and Capture stay one tap away, always** — these are correctly identified as the two things used most often (checking on things, and the headline capture action). Nothing should ever bump them out of the permanent tab bar.
+- **"More" opens a bottom sheet** containing: signed-in account email at top, then every secondary destination (Categories, Income, Occupancy, and whatever ships after that) as a simple list, then "Sign out" at the bottom.
+- **Rule going forward:** a new section becomes a new row in the More sheet by default, never a new tab and never a new header link. Only reconsider promoting something out of More into the tab bar if usage data later shows it's used as often as Properties/Capture — don't promote preemptively.
+- **This replaces two earlier, now-superseded ideas:** a header-only avatar dropdown, and plain-text links accumulating in the header row (as briefly happened with the Categories screen). Neither should be built going forward — use the tab bar + More sheet exclusively.
 
 ---
 

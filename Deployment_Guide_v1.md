@@ -29,6 +29,7 @@ support GitHub Pages for this repository"). Making the repo private silently
 disabled the live Pages site.
 
 Decided to keep the repo **public** instead, because:
+
 - No actual secrets are committed — the Google OAuth Client ID in
   `docs/google-cloud-setup.md` / the deploy workflow is a public-safe
   identifier by design (see that doc), not a secret like an API key or
