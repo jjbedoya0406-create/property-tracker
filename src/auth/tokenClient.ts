@@ -3,9 +3,12 @@ import type { TokenResponse } from "./gis-types";
 
 // drive.file (not the broader `drive` scope) — see docs/google-cloud-setup.md
 // for why: it only grants access to files this app creates itself.
+// userinfo.email is just for displaying which account is signed in (the
+// "More" sheet's account row) — no other use.
 const SCOPES = [
   "https://www.googleapis.com/auth/spreadsheets",
   "https://www.googleapis.com/auth/drive.file",
+  "https://www.googleapis.com/auth/userinfo.email",
 ].join(" ");
 
 // Opens the Google OAuth consent popup and resolves with a short-lived

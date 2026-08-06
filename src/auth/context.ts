@@ -2,6 +2,7 @@ import { createContext, useContext } from "react";
 
 export interface AuthState {
   accessToken: string | null;
+  userEmail: string | null;
   isSignedIn: boolean;
   isSigningIn: boolean;
   error: string | null;
