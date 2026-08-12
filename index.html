@@ -5,7 +5,15 @@
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
     <link rel="apple-touch-icon" href="%BASE_URL%apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#1e293b" />
+    <!-- theme_color in vite.config.ts's manifest covers Android; iOS Safari
+         doesn't read the manifest for this, so it needs its own tag
+         (issue #1 — Home screen install PWA). -->
+    <meta name="theme-color" content="#2F5233" />
+    <!-- iOS-specific: the manifest's display: "standalone" isn't honored by
+         iOS Safari on its own — these are required separately for the
+         installed icon to launch full-screen with the correct name. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Expense Tracker" />
     <title>Property Expense Tracker</title>
   </head>
   <body>
