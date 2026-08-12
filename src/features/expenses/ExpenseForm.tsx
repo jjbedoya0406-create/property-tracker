@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { parseCurrencyAmount } from "@/lib/currency";
-import { toDisplayCase } from "@/lib/text";
 import {
   Select,
   SelectContent,
@@ -40,7 +39,6 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
   const [photo, setPhoto] = useState<Blob | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
   const [isRunningOcr, setIsRunningOcr] = useState(false);
-  const [vendor, setVendor] = useState("");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -86,7 +84,6 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
     try {
       const text = await recognizeReceiptText(normalized, language);
       const guess = extractGuessesFromText(text, currency);
-      if (guess.vendor) setVendor(toDisplayCase(guess.vendor));
       if (guess.amount !== undefined) {
         // Prefill in the same format the user would type themselves —
         // period-grouped whole pesos for COP, plain decimal for USD.
@@ -108,7 +105,6 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
     event.preventDefault();
     const result = createExpenseInputSchema(t).safeParse({
       propertyId,
-      vendor,
       amount: parseCurrencyAmount(amount, currency),
       date,
       categoryId,
@@ -170,15 +166,6 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
             {t("expenseForm.readingReceipt")}
           </p>
         )}
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="expense-vendor">{t("expenseForm.vendorLabel")}</Label>
-        <Input
-          id="expense-vendor"
-          value={vendor}
-          onChange={(event) => setVendor(event.target.value)}
-        />
       </div>
 
       <div className="flex flex-col gap-1.5">

@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoggedStamp } from "@/components/LoggedStamp";
 import { formatCurrency } from "@/lib/currency";
-import { toDisplayCase } from "@/lib/text";
 import { useTranslation } from "../../i18n/useTranslation";
 import { useSettings } from "../../portfolio/context";
 import { useCategories } from "../categories/hooks";
@@ -123,17 +122,12 @@ export function ExpensesSection({ propertyId }: ExpensesSectionProps) {
                   >
                     <div className="flex flex-col gap-1">
                       <span className="font-medium">
-                        {toDisplayCase(expense.vendor)}
+                        {categoryNameById.get(expense.categoryId) ??
+                          t("expenses.unknownCategory")}
                       </span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">
-                          {expense.date}
-                        </span>
-                        <span className="rounded-[6px] bg-category-pill px-2 py-0.5 text-[11px] text-category-pill-foreground">
-                          {categoryNameById.get(expense.categoryId) ??
-                            t("expenses.unknownCategory")}
-                        </span>
-                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {expense.date}
+                      </span>
                       {expense.notes && (
                         <span className="text-sm text-muted-foreground">
                           {expense.notes}

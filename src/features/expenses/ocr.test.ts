@@ -26,7 +26,6 @@ describe("extractGuessesFromText", () => {
     const guess = extractGuessesFromText(text, "USD");
 
     expect(guess.amount).toBe(44.1);
-    expect(guess.vendor).toBe("HOME DEPOT");
     expect(guess.date).toBe("2026-05-02");
   });
 
@@ -49,7 +48,6 @@ describe("extractGuessesFromText", () => {
     const guess = extractGuessesFromText(text, "COP");
 
     expect(guess.amount).toBe(85000);
-    expect(guess.vendor).toBe("EMCALI");
     expect(guess.date).toBe("2026-04-15");
   });
 });

@@ -18,7 +18,11 @@ function rowToExpense(row: unknown[]): Expense {
     propertyId,
     amount,
     date,
-    vendor,
+    // Column E (vendor) is skipped — kept in the sheet only to avoid
+    // shifting every later column, but its data is purged (issue #6, see
+    // purgeExpenseVendorData in data/portfolio.ts) and the app no longer
+    // reads or shows it.
+    ,
     categoryId,
     receiptDriveUrl,
     source,
@@ -43,7 +47,6 @@ function rowToExpense(row: unknown[]): Expense {
     propertyId,
     amount: Number(amount) || 0,
     date: normalizeSheetDate(date),
-    vendor,
     categoryId,
     receiptDriveUrl: receiptDriveUrl || undefined,
     source: source === "manual" ? "manual" : "ocr",
@@ -59,7 +62,7 @@ function expenseToRow(expense: Expense): unknown[] {
     expense.propertyId,
     expense.amount,
     expense.date,
-    expense.vendor,
+    "", // vendor column — kept for layout, no longer written (issue #6)
     expense.categoryId,
     expense.receiptDriveUrl ?? "",
     expense.source,
@@ -83,7 +86,6 @@ export interface CreateExpenseInput {
   propertyId: string;
   amount: number;
   date: string;
-  vendor: string;
   categoryId: string;
   receiptDriveUrl?: string;
   source: ExpenseSource;

@@ -2,7 +2,6 @@ import { createWorker } from "tesseract.js";
 import type { Currency, Language } from "../../types";
 
 export interface OcrGuess {
-  vendor?: string;
   amount?: number;
   date?: string;
 }
@@ -54,8 +53,6 @@ export function extractGuessesFromText(
     .map((line) => line.trim())
     .filter(Boolean);
 
-  const vendor = lines[0];
-
   // Prefer the last line mentioning "total" as its own word (usually the
   // grand total, at the bottom) while explicitly excluding "subtotal" —
   // /total/i alone would match inside "SUBTOTAL" too, and since subtotal
@@ -81,7 +78,7 @@ export function extractGuessesFromText(
     ? normalizeDate(dateMatch, currency === "COP" ? "DMY" : "MDY")
     : undefined;
 
-  return { vendor, amount, date };
+  return { amount, date };
 }
 
 // `order` picks which field is the month vs the day — a guess the user can

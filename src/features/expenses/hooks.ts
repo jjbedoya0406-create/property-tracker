@@ -23,7 +23,6 @@ export function useExpenses(propertyId: string) {
 
 interface CreateExpenseWithReceiptInput {
   propertyId: string;
-  vendor: string;
   amount: number;
   date: string;
   categoryId: string;
@@ -42,13 +41,12 @@ export function useCreateExpenseWithReceipt() {
         ? await uploadReceiptImage(
             accessToken,
             input.photo,
-            `${input.date}-${input.vendor}-${crypto.randomUUID()}`,
+            `${input.date}-${crypto.randomUUID()}`,
           )
         : undefined;
 
       return createExpense(accessToken, spreadsheetId, {
         propertyId: input.propertyId,
-        vendor: input.vendor,
         amount: input.amount,
         date: input.date,
         categoryId: input.categoryId,

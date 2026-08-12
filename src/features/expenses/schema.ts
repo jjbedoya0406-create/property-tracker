@@ -4,7 +4,6 @@ import type { TranslateFn } from "../../i18n/useTranslation";
 export function createExpenseInputSchema(t: TranslateFn) {
   return z.object({
     propertyId: z.string().min(1, t("validation.selectProperty")),
-    vendor: z.string().trim().min(1, t("validation.vendorRequired")),
     amount: z.coerce.number().refine((n) => !Number.isNaN(n) && n > 0, {
       message: t("validation.amountInvalid"),
     }),

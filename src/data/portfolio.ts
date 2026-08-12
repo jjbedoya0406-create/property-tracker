@@ -60,6 +60,7 @@ const TENANCIES_HEADER = [
 const EXPENSES_COLUMN_COUNT = EXPENSES_HEADER.length;
 const EXPENSES_CATEGORY_COLUMN_INDEX = EXPENSES_HEADER.indexOf("category");
 const EXPENSES_NOTES_COLUMN_INDEX = EXPENSES_HEADER.indexOf("notes");
+const EXPENSES_VENDOR_COLUMN_INDEX = EXPENSES_HEADER.indexOf("vendor");
 
 // Resolves (or creates) the base spreadsheet — Properties + Expenses only.
 // Categories and Settings are deliberately NOT ensured here: seeding the
@@ -86,6 +87,7 @@ export async function ensurePortfolioSpreadsheet(
     ensureIncomeTab(accessToken, spreadsheetId),
     ensureTenanciesTab(accessToken, spreadsheetId),
     ensureExpensesNotesColumn(accessToken, spreadsheetId),
+    purgeExpenseVendorData(accessToken, spreadsheetId),
   ]);
 
   return spreadsheetId;
@@ -156,6 +158,49 @@ async function ensureExpensesNotesColumn(
   await updateValues(accessToken, spreadsheetId, "Expenses!K1:K1", [
     ["notes"],
   ]);
+}
+
+// Issue #6 (remove Vendor from the app): the vendor column is kept in the
+// sheet — dropping it would shift every later column — but its data is
+// actually purged from existing rows (the user's explicit choice, not the
+// non-destructive default used elsewhere in this file). Idempotent: safe
+// to run every sign-in, no-op once every row's vendor cell is already
+// blank.
+export async function purgeExpenseVendorData(
+  accessToken: string,
+  spreadsheetId: string,
+): Promise<void> {
+  const { values } = await getValues(
+    accessToken,
+    spreadsheetId,
+    "Expenses!A2:K",
+  );
+  const rows = values ?? [];
+  if (rows.length === 0) {
+    return;
+  }
+
+  let changed = false;
+  const purgedRows = rows.map((row) => {
+    const normalized = Array.from(
+      { length: EXPENSES_COLUMN_COUNT },
+      (_, i) => row[i] ?? "",
+    );
+    if (normalized[EXPENSES_VENDOR_COLUMN_INDEX] !== "") {
+      normalized[EXPENSES_VENDOR_COLUMN_INDEX] = "";
+      changed = true;
+    }
+    return normalized;
+  });
+
+  if (changed) {
+    await updateValues(
+      accessToken,
+      spreadsheetId,
+      `Expenses!A2:K${rows.length + 1}`,
+      purgedRows,
+    );
+  }
 }
 
 // Called once, when the onboarding language/currency picker is submitted —
