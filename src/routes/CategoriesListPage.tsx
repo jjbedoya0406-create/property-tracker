@@ -90,14 +90,27 @@ export function CategoriesListPage() {
               ) : (
                 <div
                   key={category.categoryId}
-                  className="flex min-h-11 flex-wrap items-center justify-between gap-3 px-4 py-3"
+                  className="flex flex-col gap-2 px-4 py-3"
                 >
-                  <span className="font-medium">{category.name}</span>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-medium">{category.name}</span>
+                    <div className="flex items-center gap-2">
+                      {category.categoryId === justCreatedId && (
+                        <LoggedStamp />
+                      )}
+                      {category.status === "archived" && (
+                        <Badge variant="secondary">
+                          {t("common.archived")}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  {/* Always its own row below the name, never wrapped in
+                      with it — real category names (e.g. mom's "Limpieza
+                      Áreas Comunes") are long enough that sharing a row
+                      made this wrap unpredictably depending on name
+                      length and viewport width. */}
                   <div className="flex items-center gap-2">
-                    {category.categoryId === justCreatedId && <LoggedStamp />}
-                    {category.status === "archived" && (
-                      <Badge variant="secondary">{t("common.archived")}</Badge>
-                    )}
                     <Button
                       variant="outline"
                       size="sm"
