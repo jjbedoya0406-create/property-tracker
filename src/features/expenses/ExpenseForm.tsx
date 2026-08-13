@@ -116,9 +116,17 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
       );
       return;
     }
+    const property = (properties ?? []).find(
+      (p) => p.propertyId === result.data.propertyId,
+    );
+    if (!property) {
+      setFormError(t("validation.selectProperty"));
+      return;
+    }
     setFormError(null);
+    const { propertyId: _propertyId, ...rest } = result.data;
     createExpense.mutate(
-      { ...result.data, photo },
+      { ...rest, property, photo },
       {
         onSuccess: (expense) => onSaved(expense.propertyId, expense.expenseId),
         onError: (err) =>

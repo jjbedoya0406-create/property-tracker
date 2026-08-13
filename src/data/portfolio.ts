@@ -24,6 +24,7 @@ const PROPERTIES_HEADER = [
   "address",
   "status",
   "created_at",
+  "drive_folder_id",
 ];
 const EXPENSES_HEADER = [
   "expense_id",
@@ -61,6 +62,8 @@ const EXPENSES_COLUMN_COUNT = EXPENSES_HEADER.length;
 const EXPENSES_CATEGORY_COLUMN_INDEX = EXPENSES_HEADER.indexOf("category");
 const EXPENSES_NOTES_COLUMN_INDEX = EXPENSES_HEADER.indexOf("notes");
 const EXPENSES_VENDOR_COLUMN_INDEX = EXPENSES_HEADER.indexOf("vendor");
+const PROPERTIES_DRIVE_FOLDER_COLUMN_INDEX =
+  PROPERTIES_HEADER.indexOf("drive_folder_id");
 
 // Resolves (or creates) the base spreadsheet — Properties + Expenses only.
 // Categories and Settings are deliberately NOT ensured here: seeding the
@@ -88,6 +91,7 @@ export async function ensurePortfolioSpreadsheet(
     ensureTenanciesTab(accessToken, spreadsheetId),
     ensureExpensesNotesColumn(accessToken, spreadsheetId),
     purgeExpenseVendorData(accessToken, spreadsheetId),
+    ensurePropertiesDriveFolderColumn(accessToken, spreadsheetId),
   ]);
 
   return spreadsheetId;
@@ -100,7 +104,7 @@ async function createNewSpreadsheet(accessToken: string): Promise<string> {
   ]);
 
   await Promise.all([
-    updateValues(accessToken, spreadsheet.spreadsheetId, "Properties!A1:E1", [
+    updateValues(accessToken, spreadsheet.spreadsheetId, "Properties!A1:F1", [
       PROPERTIES_HEADER,
     ]),
     updateValues(accessToken, spreadsheet.spreadsheetId, "Expenses!A1:K1", [
@@ -157,6 +161,29 @@ async function ensureExpensesNotesColumn(
   }
   await updateValues(accessToken, spreadsheetId, "Expenses!K1:K1", [
     ["notes"],
+  ]);
+}
+
+// Spreadsheets created before issue #2 (Organize Drive Storage) have a
+// 5-column Properties header (no drive_folder_id). Adds the 6th column
+// header only — existing property rows simply read back with an empty
+// folder ID until one is created for them (lazily on next capture, or via
+// the Drive-organization migration).
+async function ensurePropertiesDriveFolderColumn(
+  accessToken: string,
+  spreadsheetId: string,
+): Promise<void> {
+  const { values } = await getValues(
+    accessToken,
+    spreadsheetId,
+    "Properties!A1:F1",
+  );
+  const header = values?.[0] ?? [];
+  if (header[PROPERTIES_DRIVE_FOLDER_COLUMN_INDEX] === "drive_folder_id") {
+    return;
+  }
+  await updateValues(accessToken, spreadsheetId, "Properties!F1:F1", [
+    ["drive_folder_id"],
   ]);
 }
 

@@ -2,8 +2,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRequiredAccessToken } from "../../auth";
 import { queryKeys } from "../../api/queryKeys";
 import { createExpense, listExpenses } from "../../data/expenses";
-import { uploadReceiptImage } from "../../data/receipts";
+import { updateProperty } from "../../data/properties";
+import { createPropertyFolder, uploadReceiptImage } from "../../data/receipts";
 import { useSpreadsheetId } from "../../portfolio/context";
+import type { Property } from "../../types";
 
 // Single shared cache entry for the whole portfolio's expenses — Sheets has
 // no server-side filter-by-column, so every consumer fetches the same full
@@ -22,7 +24,7 @@ export function useExpenses(propertyId: string) {
 }
 
 interface CreateExpenseWithReceiptInput {
-  propertyId: string;
+  property: Property;
   amount: number;
   date: string;
   categoryId: string;
@@ -37,16 +39,33 @@ export function useCreateExpenseWithReceipt() {
 
   return useMutation({
     mutationFn: async (input: CreateExpenseWithReceiptInput) => {
-      const receiptDriveUrl = input.photo
-        ? await uploadReceiptImage(
+      let receiptDriveUrl: string | undefined;
+      if (input.photo) {
+        let folderId = input.property.driveFolderId;
+        if (!folderId) {
+          // Property predates issue #2 (Organize Drive Storage) and has no
+          // folder yet — create one now and persist it so future captures
+          // for this property reuse it instead of creating a new one
+          // every time.
+          folderId = await createPropertyFolder(
             accessToken,
-            input.photo,
-            `${input.date}-${crypto.randomUUID()}`,
-          )
-        : undefined;
+            input.property.name,
+          );
+          await updateProperty(accessToken, spreadsheetId, {
+            ...input.property,
+            driveFolderId: folderId,
+          });
+        }
+        receiptDriveUrl = await uploadReceiptImage(
+          accessToken,
+          input.photo,
+          `${input.date}-${crypto.randomUUID()}`,
+          folderId,
+        );
+      }
 
       return createExpense(accessToken, spreadsheetId, {
-        propertyId: input.propertyId,
+        propertyId: input.property.propertyId,
         amount: input.amount,
         date: input.date,
         categoryId: input.categoryId,
@@ -57,6 +76,9 @@ export function useCreateExpenseWithReceipt() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.properties.all,
+      });
     },
   });
 }

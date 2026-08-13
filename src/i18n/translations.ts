@@ -21,6 +21,23 @@ const en = {
   "settings.title": "Settings",
   "settings.current": "current",
 
+  "driveMigration.title": "Organize Drive Storage",
+  "driveMigration.description":
+    "Move receipts already in Drive into folders organized by property.",
+  "driveMigration.previewButton": "Preview what would move",
+  "driveMigration.previewingButton": "Checking Drive…",
+  "driveMigration.previewError": "Failed to check Drive.",
+  "driveMigration.nothingToMove":
+    "Everything's already organized — no files need to move.",
+  "driveMigration.filesToMoveHeading": "Files to move",
+  "driveMigration.orphansHeading":
+    "Needs manual review (no matching expense found)",
+  "driveMigration.runButton": "Move these files",
+  "driveMigration.runningButton": "Moving files…",
+  "driveMigration.runError": "Failed to move files.",
+  "driveMigration.runSuccess":
+    "Done — files have been moved into their property folders.",
+
   "common.active": "Active",
   "common.archived": "Archived",
   "common.cancel": "Cancel",
@@ -162,6 +179,23 @@ const es: Record<TranslationKey, string> = {
 
   "settings.title": "Configuración",
   "settings.current": "actual",
+
+  "driveMigration.title": "Organizar almacenamiento de Drive",
+  "driveMigration.description":
+    "Mueve los recibos que ya están en Drive a carpetas organizadas por propiedad.",
+  "driveMigration.previewButton": "Vista previa de lo que se movería",
+  "driveMigration.previewingButton": "Revisando Drive…",
+  "driveMigration.previewError": "No se pudo revisar Drive.",
+  "driveMigration.nothingToMove":
+    "Todo ya está organizado — no hay archivos por mover.",
+  "driveMigration.filesToMoveHeading": "Archivos por mover",
+  "driveMigration.orphansHeading":
+    "Necesitan revisión manual (sin gasto correspondiente)",
+  "driveMigration.runButton": "Mover estos archivos",
+  "driveMigration.runningButton": "Moviendo archivos…",
+  "driveMigration.runError": "No se pudieron mover los archivos.",
+  "driveMigration.runSuccess":
+    "Listo — los archivos se movieron a sus carpetas de propiedad.",
 
   "common.active": "Activas",
   "common.archived": "Archivadas",

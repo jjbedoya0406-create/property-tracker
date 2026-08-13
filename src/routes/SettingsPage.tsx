@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTranslation } from "../i18n/useTranslation";
 import { useSettings } from "../portfolio/context";
+import { DriveMigrationSection } from "../features/driveMigration/DriveMigrationSection";
 import { useUpdateSettings } from "../features/settings/hooks";
 import type { Settings } from "../types";
 
@@ -55,6 +56,7 @@ export function SettingsPage() {
           </AlertDescription>
         </Alert>
       )}
+      <DriveMigrationSection />
     </div>
   );
 }
