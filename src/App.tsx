@@ -4,6 +4,7 @@ import { AuthProvider, ProtectedRoute } from "./auth";
 import { BottomTabBar } from "./components/BottomTabBar";
 import { queryClient } from "./queryClient";
 import { RequirePortfolio } from "./portfolio/RequirePortfolio";
+import { PickerSpikePage } from "./spike/PickerSpikePage";
 import {
   CapturePage,
   CategoriesListPage,
@@ -50,6 +51,9 @@ function App() {
                 <Route path="capture" element={<CapturePage />} />
                 <Route path="categories" element={<CategoriesListPage />} />
                 <Route path="settings" element={<SettingsPage />} />
+                {/* Spike for issue #3 — not linked from nav, direct-URL
+                    only (#/spike/picker). See PickerSpikePage.tsx. */}
+                <Route path="spike/picker" element={<PickerSpikePage />} />
               </Route>
             </Route>
           </Routes>

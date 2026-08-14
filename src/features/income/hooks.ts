@@ -18,6 +18,22 @@ export function useIncome(propertyId: string) {
   });
 }
 
+// Rollup across every sibling unit in a building (issue #7's Building tab
+// "Units income" card) — income stays unit-scoped always (Requirement 3),
+// so this reads the same shared cache and narrows to a set of unit IDs
+// instead of one.
+export function useIncomeForProperties(propertyIds: string[]) {
+  const accessToken = useRequiredAccessToken();
+  const spreadsheetId = useSpreadsheetId();
+
+  return useQuery({
+    queryKey: queryKeys.income.all,
+    queryFn: () => listIncome(accessToken, spreadsheetId),
+    select: (income) =>
+      income.filter((entry) => propertyIds.includes(entry.propertyId)),
+  });
+}
+
 export function useCreateIncome() {
   const accessToken = useRequiredAccessToken();
   const spreadsheetId = useSpreadsheetId();

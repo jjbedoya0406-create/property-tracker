@@ -2,7 +2,12 @@ export type ExpenseSource = "ocr" | "manual";
 
 export interface Expense {
   expenseId: string;
-  propertyId: string;
+  // Exactly one of propertyId/buildingId is set — a unit-scoped expense
+  // has propertyId, a building-scoped shared expense (issue #7, e.g. the
+  // building's EMCALI bill) has buildingId instead. Enforced by the form,
+  // not the sheet.
+  propertyId?: string;
+  buildingId?: string;
   amount: number;
   date: string;
   // References a Categories row (Category.categoryId) rather than storing

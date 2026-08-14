@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { parseCurrencyAmount } from "@/lib/currency";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { useTranslation } from "../../i18n/useTranslation";
 import { useSettings } from "../../portfolio/context";
+import { useBuildings } from "../buildings/hooks";
 import { useCategories } from "../categories/hooks";
 import { useProperties } from "../properties/hooks";
 import { useCreateExpenseWithReceipt } from "./hooks";
@@ -25,17 +27,29 @@ import { createExpenseInputSchema } from "./schema";
 
 interface ExpenseFormProps {
   initialPropertyId?: string;
+  // Arriving from a Building tab's own "Log expense" link — no specific
+  // unit was chosen, so the property dropdown/scope default resolve from
+  // the building instead (see the effect below).
+  initialBuildingId?: string;
   onSaved: (propertyId: string, expenseId: string) => void;
 }
 
-export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
+export function ExpenseForm({
+  initialPropertyId,
+  initialBuildingId,
+  onSaved,
+}: ExpenseFormProps) {
   const { t } = useTranslation();
   const { language, currency } = useSettings();
   const { data: properties } = useProperties();
+  const { data: buildings } = useBuildings();
   const { data: categories } = useCategories();
   const createExpense = useCreateExpenseWithReceipt();
 
   const [propertyId, setPropertyId] = useState(initialPropertyId ?? "");
+  const [scope, setScope] = useState<"unit" | "building">(
+    initialBuildingId ? "building" : "unit",
+  );
   const [photo, setPhoto] = useState<Blob | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
   const [isRunningOcr, setIsRunningOcr] = useState(false);
@@ -44,6 +58,22 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
   const [categoryId, setCategoryId] = useState("");
   const [notes, setNotes] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Arriving via a building's "Log expense" link supplies a buildingId,
+  // not a specific unit — once properties load, pick any one of that
+  // building's units as the dropdown's context (siblings/building are
+  // derived from whichever unit is selected either way).
+  useEffect(() => {
+    if (propertyId || !initialBuildingId || !properties) {
+      return;
+    }
+    const firstUnit = properties.find(
+      (p) => p.buildingId === initialBuildingId,
+    );
+    if (firstUnit) {
+      setPropertyId(firstUnit.propertyId);
+    }
+  }, [propertyId, initialBuildingId, properties]);
 
   // Revoke the object URL when replaced/unmounted to avoid leaking memory.
   useEffect(() => {
@@ -62,6 +92,23 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
   const activeCategories = (categories ?? []).filter(
     (category) => category.status === "active",
   );
+
+  // The scope step only appears once the selected unit belongs to an
+  // actual multi-unit building (2+ siblings) — a standalone property sees
+  // no scope step at all, same "single-unit collapse" rule as the detail
+  // page's tab bar (issue #7, Requirement 8).
+  const selectedProperty = (properties ?? []).find(
+    (p) => p.propertyId === propertyId,
+  );
+  const siblings = selectedProperty?.buildingId
+    ? (properties ?? []).filter(
+        (p) => p.buildingId === selectedProperty.buildingId,
+      )
+    : [];
+  const isMultiUnit = siblings.length >= 2;
+  const building = isMultiUnit
+    ? buildings?.find((b) => b.buildingId === selectedProperty?.buildingId)
+    : undefined;
 
   async function handleCapture(file: File) {
     setIsRunningOcr(true);
@@ -123,12 +170,24 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
       setFormError(t("validation.selectProperty"));
       return;
     }
+    if (isMultiUnit && scope === "building" && !building) {
+      setFormError(t("errors.saveExpenseFailed"));
+      return;
+    }
     setFormError(null);
     const { propertyId: _propertyId, ...rest } = result.data;
+    const target =
+      isMultiUnit && scope === "building" && building
+        ? ({ scope: "building", building } as const)
+        : ({ scope: "unit", property } as const);
     createExpense.mutate(
-      { ...rest, property, photo },
+      { ...rest, target, photo },
       {
-        onSuccess: (expense) => onSaved(expense.propertyId, expense.expenseId),
+        // Always returns to the unit that was selected/context'd from,
+        // regardless of whether the expense itself ended up unit- or
+        // building-scoped — from there the Building tab is one tap away.
+        onSuccess: (expense) =>
+          onSaved(property.propertyId, expense.expenseId),
         onError: (err) =>
           setFormError(
             err instanceof Error ? err.message : t("errors.saveExpenseFailed"),
@@ -158,6 +217,41 @@ export function ExpenseForm({ initialPropertyId, onSaved }: ExpenseFormProps) {
           </SelectContent>
         </Select>
       </div>
+
+      {/* Only for a unit that actually belongs to a multi-unit building —
+          a standalone property never shows this (issue #7, Requirement
+          8's "single-unit collapse" applied to capture too). */}
+      {isMultiUnit && (
+        <div className="flex flex-col gap-1.5">
+          <Label>{t("expenseForm.scopeLabel")}</Label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setScope("unit")}
+              className={cn(
+                "rounded-lg border p-3 text-left text-sm font-medium",
+                scope === "unit"
+                  ? "border-primary bg-primary/5"
+                  : "border-border",
+              )}
+            >
+              {t("expenseForm.scopeUnit")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setScope("building")}
+              className={cn(
+                "rounded-lg border p-3 text-left text-sm font-medium",
+                scope === "building"
+                  ? "border-primary bg-primary/5"
+                  : "border-border",
+              )}
+            >
+              {t("expenseForm.scopeBuilding")}
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col gap-2">
         <ReceiptCaptureInput onCapture={handleCapture} disabled={isBusy} />

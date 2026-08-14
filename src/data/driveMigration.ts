@@ -45,7 +45,10 @@ export function buildMigrationPlan(
       (expense) =>
         expense.receiptDriveUrl?.includes(`/d/${file.id}/`) ?? false,
     );
-    const property = matchingExpense
+    // Building-scoped expenses (issue #7) have no propertyId — this
+    // migration only knows about property folders, so those fall through
+    // to orphans rather than crashing on a missing property lookup.
+    const property = matchingExpense?.propertyId
       ? propertyById.get(matchingExpense.propertyId)
       : undefined;
 

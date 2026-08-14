@@ -8,6 +8,7 @@ export function CapturePage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const initialPropertyId = searchParams.get("propertyId") ?? undefined;
+  const initialBuildingId = searchParams.get("buildingId") ?? undefined;
 
   return (
     <Card>
@@ -17,6 +18,7 @@ export function CapturePage() {
       <CardContent>
         <ExpenseForm
           initialPropertyId={initialPropertyId}
+          initialBuildingId={initialBuildingId}
           onSaved={(propertyId, expenseId) =>
             navigate(`/properties/${propertyId}`, {
               state: { justLoggedExpenseId: expenseId },

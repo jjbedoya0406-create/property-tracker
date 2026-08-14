@@ -27,4 +27,8 @@ export const queryKeys = {
     byProperty: (propertyId: string) =>
       ["tenancies", "byProperty", propertyId] as const,
   },
+  buildings: {
+    all: ["buildings"] as const,
+    list: () => ["buildings", "list"] as const,
+  },
 };

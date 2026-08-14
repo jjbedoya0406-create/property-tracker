@@ -2,15 +2,22 @@ import { appendValues, getValues, updateValues } from "../api/sheets/client";
 import type { Property, PropertyStatus } from "../types";
 
 // Matches the Properties tab shape in PRD §8 plus drive_folder_id (issue
-// #2): property_id, name, address, status, created_at, drive_folder_id.
-// Row 1 is the header (written once in data/portfolio.ts), data starts at
-// row 2.
+// #2) and building_id (issue #7): property_id, name, address, status,
+// created_at, drive_folder_id, building_id. Row 1 is the header (written
+// once in data/portfolio.ts), data starts at row 2.
 const SHEET_NAME = "Properties";
-const DATA_RANGE = `${SHEET_NAME}!A2:F`;
+const DATA_RANGE = `${SHEET_NAME}!A2:G`;
 
 function rowToProperty(row: unknown[]): Property {
-  const [propertyId, name, address, status, createdAt, driveFolderId] =
-    row as string[];
+  const [
+    propertyId,
+    name,
+    address,
+    status,
+    createdAt,
+    driveFolderId,
+    buildingId,
+  ] = row as string[];
   return {
     propertyId,
     name,
@@ -18,6 +25,7 @@ function rowToProperty(row: unknown[]): Property {
     status: status === "archived" ? "archived" : "active",
     createdAt,
     driveFolderId: driveFolderId || undefined,
+    buildingId: buildingId || undefined,
   };
 }
 
@@ -29,6 +37,7 @@ function propertyToRow(property: Property): unknown[] {
     property.status,
     property.createdAt,
     property.driveFolderId ?? "",
+    property.buildingId ?? "",
   ];
 }
 
@@ -45,7 +54,12 @@ export async function listProperties(
 export async function createProperty(
   accessToken: string,
   spreadsheetId: string,
-  input: { name: string; address?: string; driveFolderId?: string },
+  input: {
+    name: string;
+    address?: string;
+    driveFolderId?: string;
+    buildingId?: string;
+  },
 ): Promise<Property> {
   const property: Property = {
     propertyId: crypto.randomUUID(),
@@ -54,6 +68,7 @@ export async function createProperty(
     status: "active",
     createdAt: new Date().toISOString(),
     driveFolderId: input.driveFolderId,
+    buildingId: input.buildingId,
   };
   await appendValues(accessToken, spreadsheetId, DATA_RANGE, [
     propertyToRow(property),
@@ -90,7 +105,7 @@ export async function updateProperty(
   await updateValues(
     accessToken,
     spreadsheetId,
-    `${SHEET_NAME}!A${rowNumber}:F${rowNumber}`,
+    `${SHEET_NAME}!A${rowNumber}:G${rowNumber}`,
     [propertyToRow(property)],
   );
 }

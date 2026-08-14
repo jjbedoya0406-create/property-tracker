@@ -10,7 +10,7 @@ import type { Expense, ExpenseSource } from "../types";
 // that does rewrite existing rows, but that's a one-time migration, not
 // part of this module's normal read/write path.)
 const SHEET_NAME = "Expenses";
-const DATA_RANGE = `${SHEET_NAME}!A2:K`;
+const DATA_RANGE = `${SHEET_NAME}!A2:L`;
 
 function rowToExpense(row: unknown[]): Expense {
   const [
@@ -29,6 +29,7 @@ function rowToExpense(row: unknown[]): Expense {
     createdAt,
     editedAt,
     notes,
+    buildingId,
   ] = row as [
     string,
     string,
@@ -41,10 +42,15 @@ function rowToExpense(row: unknown[]): Expense {
     string,
     string,
     string,
+    string,
   ];
   return {
     expenseId,
-    propertyId,
+    // Exactly one of these is ever populated (issue #7) — a unit-scoped
+    // row has propertyId and a blank building_id cell, a building-scoped
+    // row has buildingId and a blank property_id cell.
+    propertyId: propertyId || undefined,
+    buildingId: buildingId || undefined,
     amount: Number(amount) || 0,
     date: normalizeSheetDate(date),
     categoryId,
@@ -59,7 +65,7 @@ function rowToExpense(row: unknown[]): Expense {
 function expenseToRow(expense: Expense): unknown[] {
   return [
     expense.expenseId,
-    expense.propertyId,
+    expense.propertyId ?? "",
     expense.amount,
     expense.date,
     "", // vendor column — kept for layout, no longer written (issue #6)
@@ -69,6 +75,7 @@ function expenseToRow(expense: Expense): unknown[] {
     expense.createdAt,
     expense.editedAt ?? "",
     expense.notes ?? "",
+    expense.buildingId ?? "",
   ];
 }
 
@@ -83,7 +90,9 @@ export async function listExpenses(
 }
 
 export interface CreateExpenseInput {
-  propertyId: string;
+  // Exactly one of these must be set — see Expense's own comment.
+  propertyId?: string;
+  buildingId?: string;
   amount: number;
   date: string;
   categoryId: string;

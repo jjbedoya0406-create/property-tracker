@@ -63,6 +63,21 @@ const en = {
   "property.backLink": "My properties",
   "property.loadError": "Failed to load property.",
 
+  "buildings.addUnitButton": "Add unit",
+  "buildings.promoteExplanation":
+    "This turns this property into the first two units of a building — shared bills (like EMCALI) will live at the building level, separate from each unit's own income and expenses.",
+  "buildings.buildingNameLabel": "Building name",
+  "buildings.unitNameLabel": "Unit name",
+  "buildings.unitNamePlaceholder": "e.g. 301",
+  "buildings.promoteSaveButton": "Save",
+  "buildings.promoteSavingButton": "Saving…",
+  "buildings.tabLabel": "Building",
+  "buildings.buildingCosts": "Building costs",
+  "buildings.unitsIncome": "Units income",
+  "buildings.sharedBillsTitle": "Shared bills",
+  "buildings.noSharedBillsYet":
+    "No shared bills logged yet — log one above to get started.",
+
   "expenses.title": "Expenses",
   "expenses.total": "Total",
   "expenses.logButton": "Log expense",
@@ -82,6 +97,9 @@ const en = {
   "expenseForm.takePhotoButton": "Take photo of receipt",
   "expenseForm.receiptPreviewAlt": "Receipt preview",
   "expenseForm.readingReceipt": "Reading receipt…",
+  "expenseForm.scopeLabel": "This expense is for",
+  "expenseForm.scopeUnit": "This unit",
+  "expenseForm.scopeBuilding": "Whole building",
   "expenseForm.amountLabel": "Amount",
   "expenseForm.dateLabel": "Date",
   "expenseForm.categoryLabel": "Category",
@@ -156,6 +174,8 @@ const en = {
   "validation.dateRequired": "Date is required",
   "validation.selectCategory": "Select a category",
   "validation.invalidInput": "Invalid input",
+  "validation.buildingNameRequired": "Building name is required",
+  "validation.unitNameRequired": "Unit name is required",
 
   "errors.saveExpenseFailed": "Failed to save expense",
 } as const;
@@ -222,6 +242,21 @@ const es: Record<TranslationKey, string> = {
   "property.backLink": "Mis propiedades",
   "property.loadError": "No se pudo cargar la propiedad.",
 
+  "buildings.addUnitButton": "Agregar unidad",
+  "buildings.promoteExplanation":
+    "Esto convierte esta propiedad en las primeras dos unidades de un edificio — las cuentas compartidas (como EMCALI) quedarán a nivel del edificio, separadas de los ingresos y gastos propios de cada unidad.",
+  "buildings.buildingNameLabel": "Nombre del edificio",
+  "buildings.unitNameLabel": "Nombre de la unidad",
+  "buildings.unitNamePlaceholder": "ej. 301",
+  "buildings.promoteSaveButton": "Guardar",
+  "buildings.promoteSavingButton": "Guardando…",
+  "buildings.tabLabel": "Edificio",
+  "buildings.buildingCosts": "Gastos del edificio",
+  "buildings.unitsIncome": "Ingresos de las unidades",
+  "buildings.sharedBillsTitle": "Cuentas compartidas",
+  "buildings.noSharedBillsYet":
+    "Aún no hay cuentas compartidas registradas — registra una arriba para empezar.",
+
   "expenses.title": "Gastos",
   "expenses.total": "Total",
   "expenses.logButton": "Registrar gasto",
@@ -242,6 +277,9 @@ const es: Record<TranslationKey, string> = {
   "expenseForm.takePhotoButton": "Tomar foto del recibo",
   "expenseForm.receiptPreviewAlt": "Vista previa del recibo",
   "expenseForm.readingReceipt": "Leyendo recibo…",
+  "expenseForm.scopeLabel": "Este gasto es para",
+  "expenseForm.scopeUnit": "Esta unidad",
+  "expenseForm.scopeBuilding": "Todo el edificio",
   "expenseForm.amountLabel": "Monto",
   "expenseForm.dateLabel": "Fecha",
   "expenseForm.categoryLabel": "Categoría",
@@ -317,6 +355,8 @@ const es: Record<TranslationKey, string> = {
   "validation.dateRequired": "La fecha es obligatoria",
   "validation.selectCategory": "Selecciona una categoría",
   "validation.invalidInput": "Entrada no válida",
+  "validation.buildingNameRequired": "El nombre del edificio es obligatorio",
+  "validation.unitNameRequired": "El nombre de la unidad es obligatorio",
 
   "errors.saveExpenseFailed": "No se pudo guardar el gasto",
 };

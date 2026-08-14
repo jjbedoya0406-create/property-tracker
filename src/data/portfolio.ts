@@ -25,6 +25,7 @@ const PROPERTIES_HEADER = [
   "status",
   "created_at",
   "drive_folder_id",
+  "building_id",
 ];
 const EXPENSES_HEADER = [
   "expense_id",
@@ -38,6 +39,7 @@ const EXPENSES_HEADER = [
   "created_at",
   "edited_at",
   "notes",
+  "building_id",
 ];
 const CATEGORIES_HEADER = ["category_id", "name", "status", "created_at"];
 const SETTINGS_HEADER = ["language", "currency"];
@@ -58,12 +60,26 @@ const TENANCIES_HEADER = [
   "rent_rate",
   "created_at",
 ];
+// issue #7: Buildings are a lightweight parent record — no status/archive
+// concept for v1, that wasn't asked for and archiving cascades aren't
+// scoped.
+const BUILDINGS_HEADER = [
+  "building_id",
+  "name",
+  "address",
+  "created_at",
+  "drive_folder_id",
+];
 const EXPENSES_COLUMN_COUNT = EXPENSES_HEADER.length;
 const EXPENSES_CATEGORY_COLUMN_INDEX = EXPENSES_HEADER.indexOf("category");
 const EXPENSES_NOTES_COLUMN_INDEX = EXPENSES_HEADER.indexOf("notes");
 const EXPENSES_VENDOR_COLUMN_INDEX = EXPENSES_HEADER.indexOf("vendor");
+const EXPENSES_BUILDING_ID_COLUMN_INDEX =
+  EXPENSES_HEADER.indexOf("building_id");
 const PROPERTIES_DRIVE_FOLDER_COLUMN_INDEX =
   PROPERTIES_HEADER.indexOf("drive_folder_id");
+const PROPERTIES_BUILDING_ID_COLUMN_INDEX =
+  PROPERTIES_HEADER.indexOf("building_id");
 
 // Resolves (or creates) the base spreadsheet — Properties + Expenses only.
 // Categories and Settings are deliberately NOT ensured here: seeding the
@@ -92,6 +108,9 @@ export async function ensurePortfolioSpreadsheet(
     ensureExpensesNotesColumn(accessToken, spreadsheetId),
     purgeExpenseVendorData(accessToken, spreadsheetId),
     ensurePropertiesDriveFolderColumn(accessToken, spreadsheetId),
+    ensureBuildingsTab(accessToken, spreadsheetId),
+    ensurePropertiesBuildingIdColumn(accessToken, spreadsheetId),
+    ensureExpensesBuildingIdColumn(accessToken, spreadsheetId),
   ]);
 
   return spreadsheetId;
@@ -104,10 +123,10 @@ async function createNewSpreadsheet(accessToken: string): Promise<string> {
   ]);
 
   await Promise.all([
-    updateValues(accessToken, spreadsheet.spreadsheetId, "Properties!A1:F1", [
+    updateValues(accessToken, spreadsheet.spreadsheetId, "Properties!A1:G1", [
       PROPERTIES_HEADER,
     ]),
-    updateValues(accessToken, spreadsheet.spreadsheetId, "Expenses!A1:K1", [
+    updateValues(accessToken, spreadsheet.spreadsheetId, "Expenses!A1:L1", [
       EXPENSES_HEADER,
     ]),
   ]);
@@ -187,6 +206,69 @@ async function ensurePropertiesDriveFolderColumn(
   ]);
 }
 
+// issue #7 (Building/Unit hierarchy): spreadsheets created before this
+// shipped have a 6-column Properties header (no building_id). Adds the
+// 7th column header only — existing rows read back with an empty
+// building_id, i.e. a standalone property, exactly today's behavior. No
+// eager migration: a real Buildings row only gets created when a user
+// explicitly adds a second unit to a property (see data/buildings.ts).
+async function ensurePropertiesBuildingIdColumn(
+  accessToken: string,
+  spreadsheetId: string,
+): Promise<void> {
+  const { values } = await getValues(
+    accessToken,
+    spreadsheetId,
+    "Properties!A1:G1",
+  );
+  const header = values?.[0] ?? [];
+  if (header[PROPERTIES_BUILDING_ID_COLUMN_INDEX] === "building_id") {
+    return;
+  }
+  await updateValues(accessToken, spreadsheetId, "Properties!G1:G1", [
+    ["building_id"],
+  ]);
+}
+
+// Same pattern, for Expenses' building_id column (set only on
+// building-scoped expenses; unit-scoped expenses keep using property_id
+// as before, and never have both set).
+async function ensureExpensesBuildingIdColumn(
+  accessToken: string,
+  spreadsheetId: string,
+): Promise<void> {
+  const { values } = await getValues(
+    accessToken,
+    spreadsheetId,
+    "Expenses!A1:L1",
+  );
+  const header = values?.[0] ?? [];
+  if (header[EXPENSES_BUILDING_ID_COLUMN_INDEX] === "building_id") {
+    return;
+  }
+  await updateValues(accessToken, spreadsheetId, "Expenses!L1:L1", [
+    ["building_id"],
+  ]);
+}
+
+// New tab (issue #7) — only ever gains rows when a user explicitly
+// promotes a property to a multi-unit building, but the tab itself is
+// ensured unconditionally (like Income/Tenancies) so that operation never
+// has to also handle "does this tab exist yet".
+async function ensureBuildingsTab(
+  accessToken: string,
+  spreadsheetId: string,
+): Promise<void> {
+  const titles = await getSheetTitles(accessToken, spreadsheetId);
+  if (titles.includes("Buildings")) {
+    return;
+  }
+  await addSheet(accessToken, spreadsheetId, "Buildings");
+  await updateValues(accessToken, spreadsheetId, "Buildings!A1:E1", [
+    BUILDINGS_HEADER,
+  ]);
+}
+
 // Issue #6 (remove Vendor from the app): the vendor column is kept in the
 // sheet — dropping it would shift every later column — but its data is
 // actually purged from existing rows (the user's explicit choice, not the
@@ -200,7 +282,7 @@ export async function purgeExpenseVendorData(
   const { values } = await getValues(
     accessToken,
     spreadsheetId,
-    "Expenses!A2:K",
+    "Expenses!A2:L",
   );
   const rows = values ?? [];
   if (rows.length === 0) {
@@ -224,7 +306,10 @@ export async function purgeExpenseVendorData(
     await updateValues(
       accessToken,
       spreadsheetId,
-      `Expenses!A2:K${rows.length + 1}`,
+      // Full column width (A:L) — a narrower write range here would
+      // silently truncate/drop later columns (e.g. building_id) on every
+      // row in the batch, not just the vendor cell being cleared.
+      `Expenses!A2:L${rows.length + 1}`,
       purgedRows,
     );
   }
