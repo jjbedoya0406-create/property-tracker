@@ -1,7 +1,12 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { useState, type ReactNode } from "react";
 import { useRequiredAccessToken } from "../auth";
 import { queryKeys } from "../api/queryKeys";
+import { listConnectedPortfolios } from "../data/connectedPortfolios";
 import { applyOnboarding, ensurePortfolioSpreadsheet } from "../data/portfolio";
 import { getSettings } from "../data/settings";
 import type { Settings } from "../types";
@@ -9,15 +14,18 @@ import { OnboardingPicker } from "./OnboardingPicker";
 import { PortfolioContext } from "./context";
 
 // Sits inside ProtectedRoute: resolves (or creates, on first sign-in) the
-// user's spreadsheet before rendering any property/expense UI (Story
-// 1.1), then resolves account Settings — showing a one-time onboarding
-// picker if the account hasn't chosen a language/currency yet (Outcome 5).
+// user's own spreadsheet before rendering any property/expense UI (Story
+// 1.1), resolves account Settings — showing a one-time onboarding picker
+// if the account hasn't chosen a language/currency yet (Outcome 5) — and
+// resolves the portfolio switcher (issue #3): which spreadsheet is
+// currently ACTIVE (home, or a connected portfolio someone shared),
+// which drives every feature hook in the app via useSpreadsheetId().
 export function RequirePortfolio({ children }: { children: ReactNode }) {
   const accessToken = useRequiredAccessToken();
   const queryClient = useQueryClient();
 
   const {
-    data: spreadsheetId,
+    data: homeSpreadsheetId,
     isPending: isSpreadsheetPending,
     isError: isSpreadsheetError,
     error: spreadsheetError,
@@ -28,24 +36,53 @@ export function RequirePortfolio({ children }: { children: ReactNode }) {
     retry: false,
   });
 
+  // Never persisted, and always re-initialized to null on mount — a
+  // fresh sign-in always lands on your own portfolio, per your explicit
+  // call, rather than remembering the last-viewed one.
+  const [activeConnectionId, setActiveConnectionId] = useState<
+    string | null
+  >(null);
+
+  const { data: connectedPortfolios } = useQuery({
+    queryKey: queryKeys.connectedPortfolios.list(),
+    queryFn: () =>
+      listConnectedPortfolios(accessToken, homeSpreadsheetId!),
+    enabled: homeSpreadsheetId !== undefined,
+    staleTime: Infinity,
+  });
+
+  const activeConnection = activeConnectionId
+    ? (connectedPortfolios ?? []).find(
+        (c) => c.connectionId === activeConnectionId,
+      )
+    : undefined;
+  // Falls back to home if the selected connection ever disappears (e.g.
+  // stale state after data reloads) — never gets stuck pointed at
+  // nothing.
+  const activeSpreadsheetId =
+    activeConnection?.spreadsheetId ?? homeSpreadsheetId;
+
   const {
     data: settings,
     isPending: isSettingsPending,
     isError: isSettingsError,
     error: settingsError,
   } = useQuery({
-    queryKey: ["portfolio", "settings"],
-    queryFn: () => getSettings(accessToken, spreadsheetId!),
-    enabled: spreadsheetId !== undefined,
+    queryKey: ["portfolio", "settings", activeSpreadsheetId],
+    queryFn: () => getSettings(accessToken, activeSpreadsheetId!),
+    enabled: activeSpreadsheetId !== undefined,
     staleTime: Infinity,
     retry: false,
   });
 
   const onboarding = useMutation({
     mutationFn: (chosen: Settings) =>
-      applyOnboarding(accessToken, spreadsheetId!, chosen),
+      applyOnboarding(accessToken, homeSpreadsheetId!, chosen),
     onSuccess: (_data, chosen) => {
-      queryClient.setQueryData(["portfolio", "settings"], chosen);
+      queryClient.setQueryData(
+        ["portfolio", "settings", homeSpreadsheetId],
+        chosen,
+      );
       // Categories may have just been seeded for the first time.
       void queryClient.invalidateQueries({
         queryKey: queryKeys.categories.all,
@@ -55,7 +92,7 @@ export function RequirePortfolio({ children }: { children: ReactNode }) {
 
   if (
     isSpreadsheetPending ||
-    (spreadsheetId !== undefined && isSettingsPending)
+    (activeSpreadsheetId !== undefined && isSettingsPending)
   ) {
     return <p>Setting up your portfolio…</p>;
   }
@@ -81,6 +118,18 @@ export function RequirePortfolio({ children }: { children: ReactNode }) {
   }
 
   if (!settings) {
+    // Onboarding only ever applies to your OWN portfolio — a connected
+    // portfolio without settings yet is a real error (someone else's
+    // account never finished setup), not something this account can fix
+    // by picking a language here.
+    if (activeConnection) {
+      return (
+        <p role="alert">
+          {activeConnection.label} hasn't finished setup yet — its owner
+          needs to sign in and choose a language/currency first.
+        </p>
+      );
+    }
     return (
       <OnboardingPicker
         isSubmitting={onboarding.isPending}
@@ -94,7 +143,17 @@ export function RequirePortfolio({ children }: { children: ReactNode }) {
 
   return (
     <PortfolioContext.Provider
-      value={{ spreadsheetId: spreadsheetId!, settings }}
+      value={{
+        spreadsheetId: activeSpreadsheetId!,
+        settings,
+        homeSpreadsheetId: homeSpreadsheetId!,
+        activeLabel: activeConnection?.label ?? null,
+        activeConnectionId: activeConnection?.connectionId ?? null,
+        connectedPortfolios: connectedPortfolios ?? [],
+        switchToHome: () => setActiveConnectionId(null),
+        switchToPortfolio: (connectionId) =>
+          setActiveConnectionId(connectionId),
+      }}
     >
       {children}
     </PortfolioContext.Provider>

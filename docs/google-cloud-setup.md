@@ -50,19 +50,38 @@ In **APIs & Services → Credentials → Create Credentials → OAuth client ID*
 
 Copy the generated **Client ID** (looks like `xxxx.apps.googleusercontent.com`).
 
-## 5. Set the environment variable
+## 5. Enable the Google Picker API (for "Connect a portfolio")
+
+Used by issue #3: `drive.file` scope only grants access to a file the
+signed-in account either created itself, or explicitly selected through
+the Google Picker — plain Drive UI sharing (adding someone as an Editor)
+isn't enough on its own. Connecting to another account's portfolio uses
+the Picker to bridge that gap, which needs its own API key, separate
+from the OAuth Client ID above:
+
+1. **APIs & Services → Library**: enable the **Google Picker API**.
+2. **APIs & Services → Credentials → Create Credentials → API key.**
+3. Restrict the key (click into it after creating): under **API
+   restrictions**, limit it to just "Google Picker API"; under
+   **Application restrictions → Website restrictions**, add
+   `http://localhost:5173/*` and
+   `https://jjbedoya0406-create.github.io/*` — an unrestricted key is
+   usable from anywhere by anyone who finds it.
+
+## 6. Set the environment variables
 
 Create a `.env.local` file in the project root (already gitignored):
 
 ```
 VITE_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+VITE_GOOGLE_PICKER_API_KEY=your-api-key
 ```
 
-For the deployed GitHub Pages build, this same value is injected at build time via
-a GitHub Actions secret — never commit it directly. In the GitHub repo, go to
+For the deployed GitHub Pages build, both values are injected at build time via
+GitHub Actions secrets — never commit them directly. In the GitHub repo, go to
 **Settings → Secrets and variables → Actions → New repository secret** and add
-`VITE_GOOGLE_CLIENT_ID` with the same value. The workflow at
-`.github/workflows/deploy.yml` reads it from there on every build.
+`VITE_GOOGLE_CLIENT_ID` and `VITE_GOOGLE_PICKER_API_KEY` with the same values. The
+workflow at `.github/workflows/deploy.yml` reads them from there on every build.
 
 Also enable Pages itself: **Settings → Pages → Source → GitHub Actions** (not
 "Deploy from a branch" — the workflow publishes directly via the Pages API).

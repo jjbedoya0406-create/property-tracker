@@ -18,6 +18,10 @@ const en = {
   "nav.signOut": "Sign out",
   "nav.signedInFallback": "Signed in",
 
+  "nav.portfolio": "Portfolio",
+  "nav.myPortfolio": "My portfolio",
+  "nav.connectPortfolio": "Connect a portfolio",
+
   "settings.title": "Settings",
   "settings.current": "current",
 
@@ -167,6 +171,15 @@ const en = {
   "portfolio.loadError": "Failed to load your portfolio.",
   "portfolio.settingsLoadError": "Failed to load your account settings.",
 
+  "connectPortfolio.labelLabel": "Label",
+  "connectPortfolio.labelPlaceholder": "Mom's portfolio",
+  "connectPortfolio.labelRequired": "Enter a label for this portfolio",
+  "connectPortfolio.chooseButton": "Choose spreadsheet",
+  "connectPortfolio.connectingButton": "Connecting…",
+  "connectPortfolio.notConfigured": "Connecting a portfolio isn't set up yet.",
+  "connectPortfolio.pickerError": "Failed to open the file picker.",
+  "connectPortfolio.connectError": "Failed to connect that portfolio.",
+
   "validation.propertyNameRequired": "Name is required",
   "validation.categoryNameRequired": "Name is required",
   "validation.selectProperty": "Select a property",
@@ -196,6 +209,10 @@ const es: Record<TranslationKey, string> = {
   "nav.settings": "Configuración",
   "nav.signOut": "Cerrar sesión",
   "nav.signedInFallback": "Sesión iniciada",
+
+  "nav.portfolio": "Portafolio",
+  "nav.myPortfolio": "Mi portafolio",
+  "nav.connectPortfolio": "Conectar un portafolio",
 
   "settings.title": "Configuración",
   "settings.current": "actual",
@@ -347,6 +364,16 @@ const es: Record<TranslationKey, string> = {
   "portfolio.loadError": "No se pudo cargar tu portafolio.",
   "portfolio.settingsLoadError":
     "No se pudo cargar la configuración de tu cuenta.",
+
+  "connectPortfolio.labelLabel": "Etiqueta",
+  "connectPortfolio.labelPlaceholder": "Portafolio de mamá",
+  "connectPortfolio.labelRequired": "Ingresa una etiqueta para este portafolio",
+  "connectPortfolio.chooseButton": "Elegir hoja de cálculo",
+  "connectPortfolio.connectingButton": "Conectando…",
+  "connectPortfolio.notConfigured":
+    "Conectar un portafolio aún no está configurado.",
+  "connectPortfolio.pickerError": "No se pudo abrir el selector de archivos.",
+  "connectPortfolio.connectError": "No se pudo conectar ese portafolio.",
 
   "validation.propertyNameRequired": "El nombre es obligatorio",
   "validation.categoryNameRequired": "El nombre es obligatorio",

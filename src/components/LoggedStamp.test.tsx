@@ -21,6 +21,12 @@ function renderLoggedStamp() {
       value={{
         spreadsheetId: "test-spreadsheet-id",
         settings: { language: "en", currency: "USD" },
+        homeSpreadsheetId: "test-spreadsheet-id",
+        activeLabel: null,
+        activeConnectionId: null,
+        connectedPortfolios: [],
+        switchToHome: () => {},
+        switchToPortfolio: () => {},
       }}
     >
       <LoggedStamp />

@@ -31,4 +31,8 @@ export const queryKeys = {
     all: ["buildings"] as const,
     list: () => ["buildings", "list"] as const,
   },
+  connectedPortfolios: {
+    all: ["connectedPortfolios"] as const,
+    list: () => ["connectedPortfolios", "list"] as const,
+  },
 };

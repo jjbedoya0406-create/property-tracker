@@ -70,6 +70,16 @@ const BUILDINGS_HEADER = [
   "created_at",
   "drive_folder_id",
 ];
+// issue #3: lives in the signed-in account's OWN spreadsheet only — never
+// written to the connected portfolio's spreadsheet. Just a personal
+// bookmark list of "other spreadsheets I've connected to", not something
+// the portfolio being connected to needs to know about.
+const CONNECTED_PORTFOLIOS_HEADER = [
+  "connection_id",
+  "spreadsheet_id",
+  "label",
+  "created_at",
+];
 const EXPENSES_COLUMN_COUNT = EXPENSES_HEADER.length;
 const EXPENSES_CATEGORY_COLUMN_INDEX = EXPENSES_HEADER.indexOf("category");
 const EXPENSES_NOTES_COLUMN_INDEX = EXPENSES_HEADER.indexOf("notes");
@@ -111,6 +121,7 @@ export async function ensurePortfolioSpreadsheet(
     ensureBuildingsTab(accessToken, spreadsheetId),
     ensurePropertiesBuildingIdColumn(accessToken, spreadsheetId),
     ensureExpensesBuildingIdColumn(accessToken, spreadsheetId),
+    ensureConnectedPortfoliosTab(accessToken, spreadsheetId),
   ]);
 
   return spreadsheetId;
@@ -267,6 +278,26 @@ async function ensureBuildingsTab(
   await updateValues(accessToken, spreadsheetId, "Buildings!A1:E1", [
     BUILDINGS_HEADER,
   ]);
+}
+
+// issue #3 (share a portfolio): the list of other spreadsheets this
+// account has connected to via the Picker — empty until the first
+// "Connect a portfolio" action.
+async function ensureConnectedPortfoliosTab(
+  accessToken: string,
+  spreadsheetId: string,
+): Promise<void> {
+  const titles = await getSheetTitles(accessToken, spreadsheetId);
+  if (titles.includes("ConnectedPortfolios")) {
+    return;
+  }
+  await addSheet(accessToken, spreadsheetId, "ConnectedPortfolios");
+  await updateValues(
+    accessToken,
+    spreadsheetId,
+    "ConnectedPortfolios!A1:D1",
+    [CONNECTED_PORTFOLIOS_HEADER],
+  );
 }
 
 // Issue #6 (remove Vendor from the app): the vendor column is kept in the
