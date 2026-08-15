@@ -3,7 +3,10 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import { AlertCircle, XIcon } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { useRequiredAccessToken } from "../auth";
 import { queryKeys } from "../api/queryKeys";
 import { listConnectedPortfolios } from "../data/connectedPortfolios";
@@ -12,6 +15,39 @@ import { getSettings } from "../data/settings";
 import type { Settings } from "../types";
 import { OnboardingPicker } from "./OnboardingPicker";
 import { PortfolioContext } from "./context";
+
+// A connected portfolio can fail in ways your OWN portfolio never can
+// (its owner revoked access, deleted the sheet, never finished
+// onboarding) — unlike a failure in your own portfolio, there's always
+// a safe way out: drop back to home. Rendered full-bleed (there's no
+// BottomTabBar yet at this point — RequirePortfolio hasn't resolved),
+// but bounded and dismissible rather than bare error text with no exit.
+function ConnectedPortfolioIssue({
+  message,
+  onBack,
+}: {
+  message: string;
+  onBack: () => void;
+}) {
+  return (
+    <div className="flex min-h-svh items-center justify-center bg-background p-4">
+      <Alert variant="destructive" className="relative max-w-sm pr-10">
+        <AlertCircle />
+        <AlertDescription>{message}</AlertDescription>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="absolute top-2 right-2"
+          onClick={onBack}
+        >
+          <XIcon />
+          <span className="sr-only">Back to my portfolio</span>
+        </Button>
+      </Alert>
+    </div>
+  );
+}
 
 // Sits inside ProtectedRoute: resolves (or creates, on first sign-in) the
 // user's own spreadsheet before rendering any property/expense UI (Story
@@ -108,6 +144,18 @@ export function RequirePortfolio({ children }: { children: ReactNode }) {
   }
 
   if (isSettingsError) {
+    if (activeConnection) {
+      return (
+        <ConnectedPortfolioIssue
+          message={
+            settingsError instanceof Error
+              ? `${activeConnection.label}: ${settingsError.message}`
+              : `Failed to load ${activeConnection.label}.`
+          }
+          onBack={() => setActiveConnectionId(null)}
+        />
+      );
+    }
     return (
       <p role="alert">
         {settingsError instanceof Error
@@ -124,10 +172,10 @@ export function RequirePortfolio({ children }: { children: ReactNode }) {
     // by picking a language here.
     if (activeConnection) {
       return (
-        <p role="alert">
-          {activeConnection.label} hasn't finished setup yet — its owner
-          needs to sign in and choose a language/currency first.
-        </p>
+        <ConnectedPortfolioIssue
+          message={`${activeConnection.label} hasn't finished setup yet — its owner needs to sign in and choose a language/currency first.`}
+          onBack={() => setActiveConnectionId(null)}
+        />
       );
     }
     return (
