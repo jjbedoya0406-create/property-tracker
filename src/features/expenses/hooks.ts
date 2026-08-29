@@ -28,6 +28,20 @@ export function useExpenses(propertyId: string) {
   });
 }
 
+// Unfiltered — every expense across every property/unit in the active
+// portfolio. Needed by the closed-year guard and the Settings page's
+// year list (issue #10), which both need to see the whole portfolio, not
+// one property.
+export function useAllExpenses() {
+  const accessToken = useRequiredAccessToken();
+  const spreadsheetId = useSpreadsheetId();
+
+  return useQuery({
+    queryKey: queryKeys.expenses.all,
+    queryFn: () => listExpenses(accessToken, spreadsheetId),
+  });
+}
+
 // Building-scoped expenses (issue #7) — the Building tab's own shared
 // bills, distinct from any unit's expenses.
 export function useBuildingExpenses(buildingId: string) {

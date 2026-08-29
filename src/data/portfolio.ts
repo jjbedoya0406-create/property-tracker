@@ -50,6 +50,7 @@ const INCOME_HEADER = [
   "date",
   "notes",
   "created_at",
+  "edited_at",
 ];
 const TENANCIES_HEADER = [
   "tenancy_id",
@@ -80,6 +81,9 @@ const CONNECTED_PORTFOLIOS_HEADER = [
   "label",
   "created_at",
 ];
+// issue #10: portfolio-wide, not per-property — closing 2025 locks 2025
+// across every property/unit in whichever spreadsheet this lives in.
+const CLOSED_YEARS_HEADER = ["year", "closed_at"];
 const EXPENSES_COLUMN_COUNT = EXPENSES_HEADER.length;
 const EXPENSES_CATEGORY_COLUMN_INDEX = EXPENSES_HEADER.indexOf("category");
 const EXPENSES_NOTES_COLUMN_INDEX = EXPENSES_HEADER.indexOf("notes");
@@ -90,6 +94,7 @@ const PROPERTIES_DRIVE_FOLDER_COLUMN_INDEX =
   PROPERTIES_HEADER.indexOf("drive_folder_id");
 const PROPERTIES_BUILDING_ID_COLUMN_INDEX =
   PROPERTIES_HEADER.indexOf("building_id");
+const INCOME_EDITED_AT_COLUMN_INDEX = INCOME_HEADER.indexOf("edited_at");
 
 // Resolves (or creates) the base spreadsheet — Properties + Expenses only.
 // Categories and Settings are deliberately NOT ensured here: seeding the
@@ -122,6 +127,8 @@ export async function ensurePortfolioSpreadsheet(
     ensurePropertiesBuildingIdColumn(accessToken, spreadsheetId),
     ensureExpensesBuildingIdColumn(accessToken, spreadsheetId),
     ensureConnectedPortfoliosTab(accessToken, spreadsheetId),
+    ensureIncomeEditedAtColumn(accessToken, spreadsheetId),
+    ensureClosedYearsTab(accessToken, spreadsheetId),
   ]);
 
   return spreadsheetId;
@@ -154,8 +161,30 @@ async function ensureIncomeTab(
     return;
   }
   await addSheet(accessToken, spreadsheetId, "Income");
-  await updateValues(accessToken, spreadsheetId, "Income!A1:F1", [
+  await updateValues(accessToken, spreadsheetId, "Income!A1:G1", [
     INCOME_HEADER,
+  ]);
+}
+
+// issue #10 (edit/delete saved entries): spreadsheets created before this
+// shipped have a 6-column Income header (no edited_at). Adds the 7th
+// column header only — same non-disruptive pattern as
+// ensureExpensesNotesColumn.
+async function ensureIncomeEditedAtColumn(
+  accessToken: string,
+  spreadsheetId: string,
+): Promise<void> {
+  const { values } = await getValues(
+    accessToken,
+    spreadsheetId,
+    "Income!A1:G1",
+  );
+  const header = values?.[0] ?? [];
+  if (header[INCOME_EDITED_AT_COLUMN_INDEX] === "edited_at") {
+    return;
+  }
+  await updateValues(accessToken, spreadsheetId, "Income!G1:G1", [
+    ["edited_at"],
   ]);
 }
 
@@ -298,6 +327,23 @@ async function ensureConnectedPortfoliosTab(
     "ConnectedPortfolios!A1:D1",
     [CONNECTED_PORTFOLIOS_HEADER],
   );
+}
+
+// issue #10 (year-close): the list of tax years this portfolio has
+// permanently locked. Empty until the first "Close [year]" action on the
+// Settings page.
+async function ensureClosedYearsTab(
+  accessToken: string,
+  spreadsheetId: string,
+): Promise<void> {
+  const titles = await getSheetTitles(accessToken, spreadsheetId);
+  if (titles.includes("ClosedYears")) {
+    return;
+  }
+  await addSheet(accessToken, spreadsheetId, "ClosedYears");
+  await updateValues(accessToken, spreadsheetId, "ClosedYears!A1:B1", [
+    CLOSED_YEARS_HEADER,
+  ]);
 }
 
 // Issue #6 (remove Vendor from the app): the vendor column is kept in the

@@ -5,4 +5,5 @@ export interface Income {
   date: string;
   notes?: string;
   createdAt: string;
+  editedAt?: string;
 }

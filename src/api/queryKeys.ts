@@ -35,4 +35,8 @@ export const queryKeys = {
     all: ["connectedPortfolios"] as const,
     list: () => ["connectedPortfolios", "list"] as const,
   },
+  closedYears: {
+    all: ["closedYears"] as const,
+    list: () => ["closedYears", "list"] as const,
+  },
 };

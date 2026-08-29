@@ -1,15 +1,34 @@
 import { useMemo, useState } from "react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, MoreVertical } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { UndoBanner } from "@/components/UndoBanner";
+import { queryKeys } from "@/api/queryKeys";
 import { formatCurrency } from "@/lib/currency";
+import { isYearClosed } from "@/lib/closedYears";
+import { useUndoableDelete } from "@/lib/useUndoableDelete";
 import { useTranslation } from "../../i18n/useTranslation";
 import { useSettings } from "../../portfolio/context";
+import type { Income } from "../../types";
+import { useClosedYears } from "../closedYears/hooks";
+import { IncomeEditForm } from "./IncomeEditForm";
 import { IncomeForm } from "./IncomeForm";
-import { useCreateIncome, useIncome } from "./hooks";
+import {
+  useCreateIncome,
+  useDeleteIncome,
+  useIncome,
+  useUpdateIncome,
+} from "./hooks";
 
 interface IncomeSectionProps {
   propertyId: string;
@@ -19,8 +38,17 @@ export function IncomeSection({ propertyId }: IncomeSectionProps) {
   const { t } = useTranslation();
   const { currency } = useSettings();
   const { data: income, isPending, isError, error } = useIncome(propertyId);
+  const { data: closedYears } = useClosedYears();
   const createIncome = useCreateIncome();
+  const updateIncome = useUpdateIncome();
+  const deleteIncomeMutation = useDeleteIncome();
+  const undoableDelete = useUndoableDelete<Income>({
+    queryKey: queryKeys.income.all,
+    getId: (entry) => entry.incomeId,
+    onCommit: (entry) => deleteIncomeMutation.mutateAsync(entry.incomeId),
+  });
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
@@ -111,31 +139,83 @@ export function IncomeSection({ propertyId }: IncomeSectionProps) {
               </p>
             ) : (
               <div className="divide-y divide-border rounded-lg border">
-                {filtered.map((entry) => (
-                  <div
-                    key={entry.incomeId}
-                    className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
-                  >
-                    <div className="flex flex-col gap-1">
-                      <span className="text-sm text-muted-foreground">
-                        {entry.date}
-                      </span>
-                      {entry.notes && (
-                        <span className="text-sm text-muted-foreground">
-                          {entry.notes}
-                        </span>
-                      )}
+                {filtered.map((entry) =>
+                  editingId === entry.incomeId ? (
+                    <div key={entry.incomeId} className="px-4 py-3">
+                      <IncomeEditForm
+                        income={entry}
+                        isSubmitting={updateIncome.isPending}
+                        onSubmit={(input) => {
+                          updateIncome.mutate(
+                            { ...entry, ...input },
+                            { onSuccess: () => setEditingId(null) },
+                          );
+                        }}
+                        onCancel={() => setEditingId(null)}
+                      />
                     </div>
-                    <span className="tabular-nums font-medium">
-                      {formatCurrency(entry.amount, currency)}
-                    </span>
-                  </div>
-                ))}
+                  ) : (
+                    <div
+                      key={entry.incomeId}
+                      className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
+                    >
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm text-muted-foreground">
+                          {entry.date}
+                        </span>
+                        {entry.notes && (
+                          <span className="text-sm text-muted-foreground">
+                            {entry.notes}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="tabular-nums font-medium">
+                          {formatCurrency(entry.amount, currency)}
+                        </span>
+                        {isYearClosed(closedYears ?? [], entry.date) ? (
+                          <Badge variant="secondary">{t("common.closed")}</Badge>
+                        ) : (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label={t("income.rowActions")}
+                              >
+                                <MoreVertical className="size-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuItem
+                                onSelect={() => setEditingId(entry.incomeId)}
+                              >
+                                {t("common.edit")}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onSelect={() => undoableDelete.remove(entry)}
+                              >
+                                {t("common.delete")}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </div>
+                    </div>
+                  ),
+                )}
               </div>
             )}
           </>
         )}
       </CardContent>
+      {undoableDelete.pendingItem && (
+        <UndoBanner
+          message={t("income.deletedMessage")}
+          onUndo={undoableDelete.undo}
+        />
+      )}
     </Card>
   );
 }

@@ -6,30 +6,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { parseCurrencyAmount } from "@/lib/currency";
-import { isYearClosed } from "@/lib/closedYears";
 import { useTranslation } from "../../i18n/useTranslation";
 import { useSettings } from "../../portfolio/context";
-import { useClosedYears } from "../closedYears/hooks";
-import { createIncomeInputSchema } from "./schema";
+import type { Income } from "../../types";
+import { createIncomeInputSchema, type IncomeInput } from "./schema";
 
-interface IncomeFormProps {
-  isSubmitting: boolean;
-  onSubmit: (input: { amount: number; date: string; notes?: string }) => void;
+interface IncomeEditFormProps {
+  income: Income;
+  isSubmitting?: boolean;
+  onSubmit: (input: IncomeInput) => void;
   onCancel: () => void;
 }
 
-export function IncomeForm({
+export function IncomeEditForm({
+  income,
   isSubmitting,
   onSubmit,
   onCancel,
-}: IncomeFormProps) {
+}: IncomeEditFormProps) {
   const { t } = useTranslation();
   const { currency } = useSettings();
-  const { data: closedYears } = useClosedYears();
-  const [amount, setAmount] = useState("");
-  const [date, setDate] = useState("");
-  const [notes, setNotes] = useState("");
-  const [formError, setFormError] = useState<string | null>(null);
+  const [amount, setAmount] = useState(String(income.amount));
+  const [date, setDate] = useState(income.date);
+  const [notes, setNotes] = useState(income.notes ?? "");
+  const [error, setError] = useState<string | null>(null);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -39,28 +39,24 @@ export function IncomeForm({
       notes,
     });
     if (!result.success) {
-      setFormError(
+      setError(
         result.error.issues[0]?.message ?? t("validation.invalidInput"),
       );
       return;
     }
-    if (isYearClosed(closedYears ?? [], result.data.date)) {
-      setFormError(
-        t("errors.yearClosed", { year: result.data.date.slice(0, 4) }),
-      );
-      return;
-    }
-    setFormError(null);
+    setError(null);
     onSubmit(result.data);
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="income-amount">{t("incomeForm.amountLabel")}</Label>
+        <Label htmlFor={`income-edit-amount-${income.incomeId}`}>
+          {t("incomeForm.amountLabel")}
+        </Label>
         {currency === "COP" ? (
           <Input
-            id="income-amount"
+            id={`income-edit-amount-${income.incomeId}`}
             type="text"
             inputMode="numeric"
             value={amount}
@@ -68,7 +64,7 @@ export function IncomeForm({
           />
         ) : (
           <Input
-            id="income-amount"
+            id={`income-edit-amount-${income.incomeId}`}
             type="number"
             step="0.01"
             value={amount}
@@ -78,9 +74,11 @@ export function IncomeForm({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="income-date">{t("incomeForm.dateLabel")}</Label>
+        <Label htmlFor={`income-edit-date-${income.incomeId}`}>
+          {t("incomeForm.dateLabel")}
+        </Label>
         <Input
-          id="income-date"
+          id={`income-edit-date-${income.incomeId}`}
           type="date"
           value={date}
           onChange={(event) => setDate(event.target.value)}
@@ -88,28 +86,33 @@ export function IncomeForm({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="income-notes">{t("incomeForm.notesLabel")}</Label>
+        <Label htmlFor={`income-edit-notes-${income.incomeId}`}>
+          {t("incomeForm.notesLabel")}
+        </Label>
         <Textarea
-          id="income-notes"
+          id={`income-edit-notes-${income.incomeId}`}
           value={notes}
           onChange={(event) => setNotes(event.target.value)}
         />
       </div>
 
-      {formError && (
+      {error && (
         <Alert variant="destructive">
           <AlertCircle />
-          <AlertDescription>{formError}</AlertDescription>
+          <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
       <div className="flex gap-2">
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting
-            ? t("incomeForm.loggingButton")
-            : t("incomeForm.logButton")}
+          {t("common.saveChanges")}
         </Button>
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isSubmitting}
+          onClick={onCancel}
+        >
           {t("common.cancel")}
         </Button>
       </div>

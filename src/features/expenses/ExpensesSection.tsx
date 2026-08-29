@@ -1,16 +1,29 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { AlertCircle, ExternalLink } from "lucide-react";
+import { AlertCircle, ExternalLink, MoreVertical } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoggedStamp } from "@/components/LoggedStamp";
+import { UndoBanner } from "@/components/UndoBanner";
+import { queryKeys } from "@/api/queryKeys";
 import { formatCurrency } from "@/lib/currency";
+import { isYearClosed } from "@/lib/closedYears";
+import { useUndoableDelete } from "@/lib/useUndoableDelete";
 import { useTranslation } from "../../i18n/useTranslation";
 import { useSettings } from "../../portfolio/context";
 import { useCategories } from "../categories/hooks";
+import { useClosedYears } from "../closedYears/hooks";
+import type { Expense } from "../../types";
 import { ExpenseEditForm } from "./ExpenseEditForm";
 import { useDeleteExpense, useExpenses, useUpdateExpense } from "./hooks";
 
@@ -25,14 +38,17 @@ export function ExpensesSection({ propertyId }: ExpensesSectionProps) {
   // Unfiltered (includes archived) so historical expenses still resolve a
   // name for categories that have since been archived (Story 1.6).
   const { data: categories } = useCategories();
+  const { data: closedYears } = useClosedYears();
   const updateExpense = useUpdateExpense();
-  const deleteExpense = useDeleteExpense();
+  const deleteExpenseMutation = useDeleteExpense();
+  const undoableDelete = useUndoableDelete<Expense>({
+    queryKey: queryKeys.expenses.all,
+    getId: (expense) => expense.expenseId,
+    onCommit: (expense) => deleteExpenseMutation.mutateAsync(expense.expenseId),
+  });
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(
-    null,
-  );
   const location = useLocation();
   const justLoggedExpenseId = (
     location.state as { justLoggedExpenseId?: string } | null
@@ -141,95 +157,70 @@ export function ExpensesSection({ propertyId }: ExpensesSectionProps) {
                   ) : (
                     <div
                       key={expense.expenseId}
-                      className="flex flex-col gap-2 px-4 py-3"
+                      className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
                     >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex flex-col gap-1">
-                          <span className="font-medium">
-                            {categoryNameById.get(expense.categoryId) ??
-                              t("expenses.unknownCategory")}
-                          </span>
+                      <div className="flex flex-col gap-1">
+                        <span className="font-medium">
+                          {categoryNameById.get(expense.categoryId) ??
+                            t("expenses.unknownCategory")}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          {expense.date}
+                        </span>
+                        {expense.notes && (
                           <span className="text-sm text-muted-foreground">
-                            {expense.date}
+                            {expense.notes}
                           </span>
-                          {expense.notes && (
-                            <span className="text-sm text-muted-foreground">
-                              {expense.notes}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {expense.expenseId === justLoggedExpenseId && (
-                            <LoggedStamp />
-                          )}
-                          <span className="tabular-nums font-medium">
-                            {formatCurrency(expense.amount, currency)}
-                          </span>
-                          {expense.receiptDriveUrl && (
-                            <Button asChild variant="ghost" size="icon-sm">
-                              <a
-                                href={expense.receiptDriveUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                aria-label={t("expenses.viewReceipt")}
-                              >
-                                <ExternalLink className="size-4" />
-                              </a>
-                            </Button>
-                          )}
-                        </div>
+                        )}
                       </div>
-                      {/* Always its own row below the content, never
-                          sharing a row with amount/receipt — real category
-                          names and notes are long enough that they wrap
-                          unpredictably otherwise (same lesson as the
-                          Categories screen). */}
-                      {confirmingDeleteId === expense.expenseId ? (
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-sm text-muted-foreground">
-                            {t("common.deleteConfirm")}
-                          </span>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            disabled={deleteExpense.isPending}
-                            onClick={() =>
-                              deleteExpense.mutate(expense.expenseId, {
-                                onSuccess: () => setConfirmingDeleteId(null),
-                              })
-                            }
-                          >
-                            {t("common.delete")}
+                      <div className="flex items-center gap-2">
+                        {expense.expenseId === justLoggedExpenseId && (
+                          <LoggedStamp />
+                        )}
+                        <span className="tabular-nums font-medium">
+                          {formatCurrency(expense.amount, currency)}
+                        </span>
+                        {expense.receiptDriveUrl && (
+                          <Button asChild variant="ghost" size="icon-sm">
+                            <a
+                              href={expense.receiptDriveUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              aria-label={t("expenses.viewReceipt")}
+                            >
+                              <ExternalLink className="size-4" />
+                            </a>
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={deleteExpense.isPending}
-                            onClick={() => setConfirmingDeleteId(null)}
-                          >
-                            {t("common.cancel")}
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setEditingId(expense.expenseId)}
-                          >
-                            {t("common.edit")}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              setConfirmingDeleteId(expense.expenseId)
-                            }
-                          >
-                            {t("common.delete")}
-                          </Button>
-                        </div>
-                      )}
+                        )}
+                        {isYearClosed(closedYears ?? [], expense.date) ? (
+                          <Badge variant="secondary">{t("common.closed")}</Badge>
+                        ) : (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label={t("expenses.rowActions")}
+                              >
+                                <MoreVertical className="size-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuItem
+                                onSelect={() => setEditingId(expense.expenseId)}
+                              >
+                                {t("common.edit")}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onSelect={() => undoableDelete.remove(expense)}
+                              >
+                                {t("common.delete")}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </div>
                     </div>
                   ),
                 )}
@@ -238,6 +229,12 @@ export function ExpensesSection({ propertyId }: ExpensesSectionProps) {
           </>
         )}
       </CardContent>
+      {undoableDelete.pendingItem && (
+        <UndoBanner
+          message={t("expenses.deletedMessage")}
+          onUndo={undoableDelete.undo}
+        />
+      )}
     </Card>
   );
 }

@@ -14,10 +14,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { isYearClosed } from "@/lib/closedYears";
 import { useTranslation } from "../../i18n/useTranslation";
 import { useSettings } from "../../portfolio/context";
 import { useBuildings } from "../buildings/hooks";
 import { useCategories } from "../categories/hooks";
+import { useClosedYears } from "../closedYears/hooks";
 import { useProperties } from "../properties/hooks";
 import { useCreateExpenseWithReceipt } from "./hooks";
 import { normalizeImageForOcr } from "./imagePreprocessing";
@@ -44,6 +46,7 @@ export function ExpenseForm({
   const { data: properties } = useProperties();
   const { data: buildings } = useBuildings();
   const { data: categories } = useCategories();
+  const { data: closedYears } = useClosedYears();
   const createExpense = useCreateExpenseWithReceipt();
 
   const [propertyId, setPropertyId] = useState(initialPropertyId ?? "");
@@ -160,6 +163,12 @@ export function ExpenseForm({
     if (!result.success) {
       setFormError(
         result.error.issues[0]?.message ?? t("validation.invalidInput"),
+      );
+      return;
+    }
+    if (isYearClosed(closedYears ?? [], result.data.date)) {
+      setFormError(
+        t("errors.yearClosed", { year: result.data.date.slice(0, 4) }),
       );
       return;
     }

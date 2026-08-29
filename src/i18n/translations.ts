@@ -48,6 +48,8 @@ const en = {
   "common.edit": "Edit",
   "common.delete": "Delete",
   "common.deleteConfirm": "Delete this for good?",
+  "common.undo": "Undo",
+  "common.closed": "Closed",
   "common.archive": "Archive",
   "common.unarchive": "Unarchive",
   "common.rename": "Rename",
@@ -95,6 +97,8 @@ const en = {
   "expenses.emptyNoneInRange": "No expenses in this date range.",
   "expenses.unknownCategory": "Unknown category",
   "expenses.viewReceipt": "View receipt",
+  "expenses.rowActions": "Expense actions",
+  "expenses.deletedMessage": "Expense deleted",
 
   "capture.title": "Capture Receipt",
 
@@ -124,6 +128,8 @@ const en = {
   "income.emptyNoneYet":
     "No income logged yet — log a rent payment above to get started.",
   "income.emptyNoneInRange": "No income in this date range.",
+  "income.rowActions": "Income actions",
+  "income.deletedMessage": "Income entry deleted",
 
   "incomeForm.amountLabel": "Amount",
   "incomeForm.dateLabel": "Date received",
@@ -189,6 +195,16 @@ const en = {
   "validation.unitNameRequired": "Unit name is required",
 
   "errors.saveExpenseFailed": "Failed to save expense",
+  "errors.yearClosed": "{year} is closed — nothing can be added, edited, or deleted for that year.",
+
+  "settings.closedYearsTitle": "Tax years",
+  "settings.closedYearsDescription":
+    "Closing a year locks it across every property in this portfolio — no more edits, deletes, or new entries dated within it. This can't be undone.",
+  "settings.closeYearButton": "Close {year}",
+  "settings.closingButton": "Closing…",
+  "settings.closeYearConfirm":
+    "This permanently locks every property's entries for {year} — you won't be able to edit, delete, or add anything dated in {year} afterward. This can't be undone.",
+  "settings.closeYearConfirmButton": "Yes, close {year}",
 } as const;
 
 export type TranslationKey = keyof typeof en;
@@ -238,6 +254,8 @@ const es: Record<TranslationKey, string> = {
   "common.edit": "Editar",
   "common.delete": "Eliminar",
   "common.deleteConfirm": "¿Eliminar esto definitivamente?",
+  "common.undo": "Deshacer",
+  "common.closed": "Cerrado",
   "common.archive": "Archivar",
   "common.unarchive": "Desarchivar",
   "common.rename": "Renombrar",
@@ -286,6 +304,8 @@ const es: Record<TranslationKey, string> = {
   "expenses.emptyNoneInRange": "No hay gastos en este rango de fechas.",
   "expenses.unknownCategory": "Categoría desconocida",
   "expenses.viewReceipt": "Ver recibo",
+  "expenses.rowActions": "Acciones del gasto",
+  "expenses.deletedMessage": "Gasto eliminado",
 
   "capture.title": "Capturar Recibo",
 
@@ -315,6 +335,8 @@ const es: Record<TranslationKey, string> = {
   "income.emptyNoneYet":
     "Aún no hay ingresos registrados — registra un pago de alquiler arriba para empezar.",
   "income.emptyNoneInRange": "No hay ingresos en este rango de fechas.",
+  "income.rowActions": "Acciones del ingreso",
+  "income.deletedMessage": "Ingreso eliminado",
 
   "incomeForm.amountLabel": "Monto",
   "incomeForm.dateLabel": "Fecha de recibo",
@@ -382,6 +404,17 @@ const es: Record<TranslationKey, string> = {
   "validation.unitNameRequired": "El nombre de la unidad es obligatorio",
 
   "errors.saveExpenseFailed": "No se pudo guardar el gasto",
+  "errors.yearClosed":
+    "{year} está cerrado — no se puede agregar, editar ni eliminar nada de ese año.",
+
+  "settings.closedYearsTitle": "Años fiscales",
+  "settings.closedYearsDescription":
+    "Cerrar un año lo bloquea en todas las propiedades de este portafolio — ya no se podrán editar, eliminar ni agregar entradas de ese año. Esto no se puede deshacer.",
+  "settings.closeYearButton": "Cerrar {year}",
+  "settings.closingButton": "Cerrando…",
+  "settings.closeYearConfirm":
+    "Esto bloquea permanentemente las entradas de {year} en todas las propiedades — no podrás editar, eliminar ni agregar nada con fecha de {year} después de esto. No se puede deshacer.",
+  "settings.closeYearConfirmButton": "Sí, cerrar {year}",
 };
 
 export const translations = { en, es } as const;
