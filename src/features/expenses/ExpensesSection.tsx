@@ -11,7 +11,8 @@ import { formatCurrency } from "@/lib/currency";
 import { useTranslation } from "../../i18n/useTranslation";
 import { useSettings } from "../../portfolio/context";
 import { useCategories } from "../categories/hooks";
-import { useExpenses } from "./hooks";
+import { ExpenseEditForm } from "./ExpenseEditForm";
+import { useDeleteExpense, useExpenses, useUpdateExpense } from "./hooks";
 
 interface ExpensesSectionProps {
   propertyId: string;
@@ -24,8 +25,14 @@ export function ExpensesSection({ propertyId }: ExpensesSectionProps) {
   // Unfiltered (includes archived) so historical expenses still resolve a
   // name for categories that have since been archived (Story 1.6).
   const { data: categories } = useCategories();
+  const updateExpense = useUpdateExpense();
+  const deleteExpense = useDeleteExpense();
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(
+    null,
+  );
   const location = useLocation();
   const justLoggedExpenseId = (
     location.state as { justLoggedExpenseId?: string } | null
@@ -115,47 +122,117 @@ export function ExpensesSection({ propertyId }: ExpensesSectionProps) {
               </p>
             ) : (
               <div className="divide-y divide-border rounded-lg border">
-                {filtered.map((expense) => (
-                  <div
-                    key={expense.expenseId}
-                    className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
-                  >
-                    <div className="flex flex-col gap-1">
-                      <span className="font-medium">
-                        {categoryNameById.get(expense.categoryId) ??
-                          t("expenses.unknownCategory")}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        {expense.date}
-                      </span>
-                      {expense.notes && (
-                        <span className="text-sm text-muted-foreground">
-                          {expense.notes}
-                        </span>
-                      )}
+                {filtered.map((expense) =>
+                  editingId === expense.expenseId ? (
+                    <div key={expense.expenseId} className="px-4 py-3">
+                      <ExpenseEditForm
+                        expense={expense}
+                        categories={categories ?? []}
+                        isSubmitting={updateExpense.isPending}
+                        onSubmit={(input) => {
+                          updateExpense.mutate(
+                            { ...expense, ...input },
+                            { onSuccess: () => setEditingId(null) },
+                          );
+                        }}
+                        onCancel={() => setEditingId(null)}
+                      />
                     </div>
-                    <div className="flex items-center gap-2">
-                      {expense.expenseId === justLoggedExpenseId && (
-                        <LoggedStamp />
-                      )}
-                      <span className="tabular-nums font-medium">
-                        {formatCurrency(expense.amount, currency)}
-                      </span>
-                      {expense.receiptDriveUrl && (
-                        <Button asChild variant="ghost" size="icon-sm">
-                          <a
-                            href={expense.receiptDriveUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            aria-label={t("expenses.viewReceipt")}
+                  ) : (
+                    <div
+                      key={expense.expenseId}
+                      className="flex flex-col gap-2 px-4 py-3"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-col gap-1">
+                          <span className="font-medium">
+                            {categoryNameById.get(expense.categoryId) ??
+                              t("expenses.unknownCategory")}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {expense.date}
+                          </span>
+                          {expense.notes && (
+                            <span className="text-sm text-muted-foreground">
+                              {expense.notes}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {expense.expenseId === justLoggedExpenseId && (
+                            <LoggedStamp />
+                          )}
+                          <span className="tabular-nums font-medium">
+                            {formatCurrency(expense.amount, currency)}
+                          </span>
+                          {expense.receiptDriveUrl && (
+                            <Button asChild variant="ghost" size="icon-sm">
+                              <a
+                                href={expense.receiptDriveUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                aria-label={t("expenses.viewReceipt")}
+                              >
+                                <ExternalLink className="size-4" />
+                              </a>
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      {/* Always its own row below the content, never
+                          sharing a row with amount/receipt — real category
+                          names and notes are long enough that they wrap
+                          unpredictably otherwise (same lesson as the
+                          Categories screen). */}
+                      {confirmingDeleteId === expense.expenseId ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm text-muted-foreground">
+                            {t("common.deleteConfirm")}
+                          </span>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            disabled={deleteExpense.isPending}
+                            onClick={() =>
+                              deleteExpense.mutate(expense.expenseId, {
+                                onSuccess: () => setConfirmingDeleteId(null),
+                              })
+                            }
                           >
-                            <ExternalLink className="size-4" />
-                          </a>
-                        </Button>
+                            {t("common.delete")}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={deleteExpense.isPending}
+                            onClick={() => setConfirmingDeleteId(null)}
+                          >
+                            {t("common.cancel")}
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingId(expense.expenseId)}
+                          >
+                            {t("common.edit")}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              setConfirmingDeleteId(expense.expenseId)
+                            }
+                          >
+                            {t("common.delete")}
+                          </Button>
+                        </div>
                       )}
                     </div>
-                  </div>
-                ))}
+                  ),
+                )}
               </div>
             )}
           </>

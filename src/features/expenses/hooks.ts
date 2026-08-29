@@ -1,11 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRequiredAccessToken } from "../../auth";
 import { queryKeys } from "../../api/queryKeys";
-import { createExpense, listExpenses } from "../../data/expenses";
+import {
+  createExpense,
+  deleteExpense,
+  listExpenses,
+  updateExpense,
+} from "../../data/expenses";
 import { updateProperty } from "../../data/properties";
 import { createPropertyFolder, uploadReceiptImage } from "../../data/receipts";
 import { useSpreadsheetId } from "../../portfolio/context";
-import type { Building, Property } from "../../types";
+import type { Building, Expense, Property } from "../../types";
 
 // Single shared cache entry for the whole portfolio's expenses — Sheets has
 // no server-side filter-by-column, so every consumer fetches the same full
@@ -98,6 +103,34 @@ export function useCreateExpenseWithReceipt() {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.properties.all,
       });
+    },
+  });
+}
+
+export function useUpdateExpense() {
+  const accessToken = useRequiredAccessToken();
+  const spreadsheetId = useSpreadsheetId();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (expense: Expense) =>
+      updateExpense(accessToken, spreadsheetId, expense),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all });
+    },
+  });
+}
+
+export function useDeleteExpense() {
+  const accessToken = useRequiredAccessToken();
+  const spreadsheetId = useSpreadsheetId();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (expenseId: string) =>
+      deleteExpense(accessToken, spreadsheetId, expenseId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all });
     },
   });
 }

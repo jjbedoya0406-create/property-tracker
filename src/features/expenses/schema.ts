@@ -14,3 +14,14 @@ export function createExpenseInputSchema(t: TranslateFn) {
 }
 
 export type ExpenseInput = z.infer<ReturnType<typeof createExpenseInputSchema>>;
+
+// Editing an existing expense never re-scopes which property/building it
+// belongs to or touches its receipt photo — just the fields someone would
+// actually need to correct a mistake.
+export function createExpenseEditInputSchema(t: TranslateFn) {
+  return createExpenseInputSchema(t).omit({ propertyId: true });
+}
+
+export type ExpenseEditInput = z.infer<
+  ReturnType<typeof createExpenseEditInputSchema>
+>;

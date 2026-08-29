@@ -1,14 +1,9 @@
-import { appendValues, getValues } from "../api/sheets/client";
+import { appendValues, deleteRow, getValues, updateValues } from "../api/sheets/client";
 import { normalizeSheetDate } from "../lib/sheetDate";
 import type { Expense, ExpenseSource } from "../types";
 
 // Matches the Expenses tab shape in PRD §8. Row 1 is the header (written
-// once in data/portfolio.ts), data starts at row 2. Unlike Properties, rows
-// are never rewritten in place for v1 (no edit/delete of saved expenses yet
-// — PRD §7 "should-have"), so this module is append/read only. (The
-// category-name-to-ID migration in data/portfolio.ts is the one exception
-// that does rewrite existing rows, but that's a one-time migration, not
-// part of this module's normal read/write path.)
+// once in data/portfolio.ts), data starts at row 2.
 const SHEET_NAME = "Expenses";
 const DATA_RANGE = `${SHEET_NAME}!A2:L`;
 
@@ -115,4 +110,53 @@ export async function createExpense(
     expenseToRow(expense),
   ]);
   return expense;
+}
+
+// Sheets edits target a row number, not an ID, so every write first locates
+// the expense's current row — same tradeoff as categories.ts/properties.ts.
+async function findExpenseRowNumber(
+  accessToken: string,
+  spreadsheetId: string,
+  expenseId: string,
+): Promise<number> {
+  const { values } = await getValues(accessToken, spreadsheetId, DATA_RANGE);
+  const index = (values ?? []).findIndex((row) => row[0] === expenseId);
+  if (index === -1) {
+    throw new Error(`Expense ${expenseId} not found`);
+  }
+  return index + 2; // +1 for 1-indexing, +1 for the header row
+}
+
+export async function updateExpense(
+  accessToken: string,
+  spreadsheetId: string,
+  expense: Expense,
+): Promise<void> {
+  const rowNumber = await findExpenseRowNumber(
+    accessToken,
+    spreadsheetId,
+    expense.expenseId,
+  );
+  await updateValues(
+    accessToken,
+    spreadsheetId,
+    `${SHEET_NAME}!A${rowNumber}:L${rowNumber}`,
+    [expenseToRow({ ...expense, editedAt: new Date().toISOString() })],
+  );
+}
+
+// Hard delete, not archive — unlike categories/properties, nothing else
+// ever references an expense by ID, so there's no dangling-reference
+// reason to keep a hidden row around (confirmed with Jason for issue #10).
+export async function deleteExpense(
+  accessToken: string,
+  spreadsheetId: string,
+  expenseId: string,
+): Promise<void> {
+  const rowNumber = await findExpenseRowNumber(
+    accessToken,
+    spreadsheetId,
+    expenseId,
+  );
+  await deleteRow(accessToken, spreadsheetId, SHEET_NAME, rowNumber);
 }

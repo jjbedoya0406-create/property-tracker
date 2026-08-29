@@ -101,3 +101,52 @@ export function addSheet(
     }),
   });
 }
+
+// deleteDimension needs the tab's numeric sheetId, not its title.
+async function getSheetId(
+  accessToken: string,
+  spreadsheetId: string,
+  sheetTitle: string,
+): Promise<number> {
+  const url = `${SHEETS_BASE}/${spreadsheetId}?fields=sheets.properties`;
+  const { sheets } = await authorizedFetchJson<{
+    sheets: { properties: { sheetId: number; title: string } }[];
+  }>(accessToken, url);
+  const sheet = sheets.find((s) => s.properties.title === sheetTitle);
+  if (!sheet) {
+    throw new Error(`Sheet "${sheetTitle}" not found`);
+  }
+  return sheet.properties.sheetId;
+}
+
+// Permanently removes one row (1-indexed, matching the row numbers
+// data/*.ts's findXRowNumber helpers already compute) — used for actual
+// deletion (as opposed to updateValues, which is for edits/archiving) and
+// deliberately not exposed for bulk ranges since every caller today
+// deletes exactly one located row at a time.
+export async function deleteRow(
+  accessToken: string,
+  spreadsheetId: string,
+  sheetTitle: string,
+  rowNumber: number,
+): Promise<unknown> {
+  const sheetId = await getSheetId(accessToken, spreadsheetId, sheetTitle);
+  const url = `${SHEETS_BASE}/${spreadsheetId}:batchUpdate`;
+  return authorizedFetchJson(accessToken, url, {
+    method: "POST",
+    body: JSON.stringify({
+      requests: [
+        {
+          deleteDimension: {
+            range: {
+              sheetId,
+              dimension: "ROWS",
+              startIndex: rowNumber - 1,
+              endIndex: rowNumber,
+            },
+          },
+        },
+      ],
+    }),
+  });
+}
