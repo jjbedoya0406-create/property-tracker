@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { AlertCircle, MoreVertical } from "lucide-react";
+import { AlertCircle, ChevronDown, MoreVertical } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,17 +10,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { UndoBanner } from "@/components/UndoBanner";
 import { queryKeys } from "@/api/queryKeys";
 import { formatCurrency } from "@/lib/currency";
 import { isYearClosed } from "@/lib/closedYears";
+import { formatMonthLabel } from "@/lib/monthLabel";
+import { cn } from "@/lib/utils";
 import { useUndoableDelete } from "@/lib/useUndoableDelete";
-import { useTranslation } from "../../i18n/useTranslation";
+import { useTranslation, type TranslateFn } from "../../i18n/useTranslation";
 import { useSettings } from "../../portfolio/context";
-import type { Income } from "../../types";
+import type { ClosedYear, Income } from "../../types";
 import { useClosedYears } from "../closedYears/hooks";
+import { groupIncomeByYear, type MonthGroup } from "./groupByYear";
 import { IncomeEditForm } from "./IncomeEditForm";
 import { IncomeForm } from "./IncomeForm";
 import {
@@ -30,13 +31,21 @@ import {
   useUpdateIncome,
 } from "./hooks";
 
+const RECENT_MONTHS_DEFAULT = 3;
+
+function formatPaymentsCount(count: number, t: TranslateFn): string {
+  return count === 1
+    ? t("income.onePayment")
+    : t("income.paymentsCount", { count: String(count) });
+}
+
 interface IncomeSectionProps {
   propertyId: string;
 }
 
 export function IncomeSection({ propertyId }: IncomeSectionProps) {
   const { t } = useTranslation();
-  const { currency } = useSettings();
+  const { currency, language } = useSettings();
   const { data: income, isPending, isError, error } = useIncome(propertyId);
   const { data: closedYears } = useClosedYears();
   const createIncome = useCreateIncome();
@@ -49,32 +58,40 @@ export function IncomeSection({ propertyId }: IncomeSectionProps) {
   });
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  // No year auto-expands on load — the headline shows an all-time total
+  // until you tap one open.
+  const [expandedYear, setExpandedYear] = useState<number | null>(null);
+  const [showAllMonths, setShowAllMonths] = useState(false);
+  const [expandedMonth, setExpandedMonth] = useState<string | null>(null);
 
-  const runningTotal = useMemo(
+  const years = useMemo(() => groupIncomeByYear(income ?? []), [income]);
+  const expandedYearGroup =
+    expandedYear !== null ? years.find((y) => y.year === expandedYear) : undefined;
+  const allTimeTotal = useMemo(
     () => (income ?? []).reduce((sum, entry) => sum + entry.amount, 0),
     [income],
   );
+  const headlineLabel =
+    expandedYear !== null
+      ? t("income.totalForYear", { year: String(expandedYear) })
+      : t("income.totalAllTime");
+  const headlineTotal =
+    expandedYear !== null ? (expandedYearGroup?.total ?? 0) : allTimeTotal;
 
-  const filtered = useMemo(() => {
-    return (income ?? [])
-      .filter(
-        (entry) =>
-          (!fromDate || entry.date >= fromDate) &&
-          (!toDate || entry.date <= toDate),
-      )
-      .sort((a, b) => (a.date < b.date ? 1 : -1));
-  }, [income, fromDate, toDate]);
+  function toggleYear(year: number) {
+    setExpandedYear((current) => (current === year ? null : year));
+    setShowAllMonths(false);
+    setExpandedMonth(null);
+  }
 
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between gap-3">
         <CardTitle className="text-lg">{t("income.title")}</CardTitle>
         <p className="tabular-nums">
-          <span className="text-muted-foreground">{t("income.total")}</span>{" "}
+          <span className="text-muted-foreground">{headlineLabel}</span>{" "}
           <span className="font-medium">
-            {formatCurrency(runningTotal, currency)}
+            {formatCurrency(headlineTotal, currency)}
           </span>
         </p>
       </CardHeader>
@@ -110,101 +127,97 @@ export function IncomeSection({ propertyId }: IncomeSectionProps) {
 
         {!isPending && !isError && (
           <>
-            <div className="flex flex-wrap items-end gap-3">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="income-from">{t("income.fromLabel")}</Label>
-                <Input
-                  id="income-from"
-                  type="date"
-                  value={fromDate}
-                  onChange={(event) => setFromDate(event.target.value)}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="income-to">{t("income.toLabel")}</Label>
-                <Input
-                  id="income-to"
-                  type="date"
-                  value={toDate}
-                  onChange={(event) => setToDate(event.target.value)}
-                />
-              </div>
-            </div>
-
-            {filtered.length === 0 ? (
-              <p className="text-muted-foreground">
-                {(income ?? []).length === 0
-                  ? t("income.emptyNoneYet")
-                  : t("income.emptyNoneInRange")}
-              </p>
+            {years.length === 0 ? (
+              <p className="text-muted-foreground">{t("income.emptyNoneYet")}</p>
             ) : (
-              <div className="divide-y divide-border rounded-lg border">
-                {filtered.map((entry) =>
-                  editingId === entry.incomeId ? (
-                    <div key={entry.incomeId} className="px-4 py-3">
-                      <IncomeEditForm
-                        income={entry}
-                        isSubmitting={updateIncome.isPending}
-                        onSubmit={(input) => {
-                          updateIncome.mutate(
-                            { ...entry, ...input },
-                            { onSuccess: () => setEditingId(null) },
-                          );
-                        }}
-                        onCancel={() => setEditingId(null)}
-                      />
-                    </div>
-                  ) : (
+              <div className="flex flex-col gap-2">
+                {years.map((yearGroup) => {
+                  const isExpanded = yearGroup.year === expandedYear;
+                  const visibleMonths = isExpanded
+                    ? showAllMonths
+                      ? yearGroup.months
+                      : yearGroup.months.slice(0, RECENT_MONTHS_DEFAULT)
+                    : [];
+                  const hasMoreMonths =
+                    yearGroup.months.length > RECENT_MONTHS_DEFAULT;
+
+                  return (
                     <div
-                      key={entry.incomeId}
-                      className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
+                      key={yearGroup.year}
+                      className="rounded-lg border border-border"
                     >
-                      <div className="flex flex-col gap-1">
-                        <span className="text-sm text-muted-foreground">
-                          {entry.date}
-                        </span>
-                        {entry.notes && (
+                      <button
+                        type="button"
+                        onClick={() => toggleYear(yearGroup.year)}
+                        className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
+                      >
+                        <span className="flex items-baseline gap-2">
+                          <span className="font-medium">{yearGroup.year}</span>
                           <span className="text-sm text-muted-foreground">
-                            {entry.notes}
+                            {formatPaymentsCount(yearGroup.count, t)}
                           </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="tabular-nums font-medium">
-                          {formatCurrency(entry.amount, currency)}
                         </span>
-                        {isYearClosed(closedYears ?? [], entry.date) ? (
-                          <Badge variant="secondary">{t("common.closed")}</Badge>
-                        ) : (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                aria-label={t("income.rowActions")}
-                              >
-                                <MoreVertical className="size-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              <DropdownMenuItem
-                                onSelect={() => setEditingId(entry.incomeId)}
-                              >
-                                {t("common.edit")}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                variant="destructive"
-                                onSelect={() => undoableDelete.remove(entry)}
-                              >
-                                {t("common.delete")}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
-                      </div>
+                        <span className="flex items-center gap-2">
+                          <span className="tabular-nums font-medium">
+                            {formatCurrency(yearGroup.total, currency)}
+                          </span>
+                          <ChevronDown
+                            className={cn(
+                              "size-4 text-muted-foreground transition-transform",
+                              isExpanded && "rotate-180",
+                            )}
+                          />
+                        </span>
+                      </button>
+
+                      {isExpanded && (
+                        <div className="flex flex-col divide-y divide-border border-t border-border">
+                          {visibleMonths.map((monthGroup) => (
+                            <MonthSection
+                              key={monthGroup.month}
+                              monthGroup={monthGroup}
+                              language={language}
+                              currency={currency}
+                              closedYears={closedYears ?? []}
+                              isExpanded={expandedMonth === monthGroup.month}
+                              onToggle={() =>
+                                setExpandedMonth((current) =>
+                                  current === monthGroup.month
+                                    ? null
+                                    : monthGroup.month,
+                                )
+                              }
+                              editingId={editingId}
+                              onEdit={setEditingId}
+                              onDelete={(entry) => undoableDelete.remove(entry)}
+                              updateIncome={updateIncome}
+                              onSaveEdit={() => setEditingId(null)}
+                            />
+                          ))}
+                          {hasMoreMonths && (
+                            <button
+                              type="button"
+                              className="flex w-full items-center justify-center gap-1.5 bg-muted px-4 py-3 text-center text-sm font-medium text-primary hover:bg-muted/70"
+                              onClick={() => setShowAllMonths((v) => !v)}
+                            >
+                              {showAllMonths
+                                ? t("income.showLastThreeMonths")
+                                : t("income.showAllMonths", {
+                                    count: String(yearGroup.months.length),
+                                  })}
+                              <ChevronDown
+                                className={cn(
+                                  "size-4 transition-transform",
+                                  showAllMonths && "rotate-180",
+                                )}
+                              />
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  ),
-                )}
+                  );
+                })}
               </div>
             )}
           </>
@@ -217,5 +230,183 @@ export function IncomeSection({ propertyId }: IncomeSectionProps) {
         />
       )}
     </Card>
+  );
+}
+
+interface MonthSectionProps {
+  monthGroup: MonthGroup;
+  language: "en" | "es";
+  currency: "USD" | "COP";
+  closedYears: ClosedYear[];
+  isExpanded: boolean;
+  onToggle: () => void;
+  editingId: string | null;
+  onEdit: (incomeId: string) => void;
+  onDelete: (entry: Income) => void;
+  updateIncome: ReturnType<typeof useUpdateIncome>;
+  onSaveEdit: () => void;
+}
+
+// A month with exactly one payment renders as a plain row (nothing to
+// collapse); a month with more than one collapses into a single summary
+// line — "(N payments)" — that expands on tap to reveal each entry with
+// its own edit/delete, same as a single-payment row (issue #11).
+function MonthSection({
+  monthGroup,
+  language,
+  currency,
+  closedYears,
+  isExpanded,
+  onToggle,
+  editingId,
+  onEdit,
+  onDelete,
+  updateIncome,
+  onSaveEdit,
+}: MonthSectionProps) {
+  const { t } = useTranslation();
+
+  if (monthGroup.entries.length === 1) {
+    return (
+      <IncomeEntryRow
+        entry={monthGroup.entries[0]}
+        currency={currency}
+        closedYears={closedYears}
+        isEditing={editingId === monthGroup.entries[0].incomeId}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        updateIncome={updateIncome}
+        onSaveEdit={onSaveEdit}
+      />
+    );
+  }
+
+  return (
+    <div className="flex flex-col">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
+      >
+        <span className="font-medium">
+          {formatMonthLabel(monthGroup.month, language)}
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">
+            {formatPaymentsCount(monthGroup.entries.length, t)}
+          </span>
+          <span className="tabular-nums font-medium">
+            {formatCurrency(monthGroup.total, currency)}
+          </span>
+          <ChevronDown
+            className={cn(
+              "size-4 text-muted-foreground transition-transform",
+              isExpanded && "rotate-180",
+            )}
+          />
+        </span>
+      </button>
+      {isExpanded && (
+        <div className="flex flex-col divide-y divide-border border-t border-border bg-muted/30">
+          {monthGroup.entries.map((entry) => (
+            <IncomeEntryRow
+              key={entry.incomeId}
+              entry={entry}
+              currency={currency}
+              closedYears={closedYears}
+              isEditing={editingId === entry.incomeId}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              updateIncome={updateIncome}
+              onSaveEdit={onSaveEdit}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface IncomeEntryRowProps {
+  entry: Income;
+  currency: "USD" | "COP";
+  closedYears: ClosedYear[];
+  isEditing: boolean;
+  onEdit: (incomeId: string) => void;
+  onDelete: (entry: Income) => void;
+  updateIncome: ReturnType<typeof useUpdateIncome>;
+  onSaveEdit: () => void;
+}
+
+function IncomeEntryRow({
+  entry,
+  currency,
+  closedYears,
+  isEditing,
+  onEdit,
+  onDelete,
+  updateIncome,
+  onSaveEdit,
+}: IncomeEntryRowProps) {
+  const { t } = useTranslation();
+
+  if (isEditing) {
+    return (
+      <div className="px-4 py-3">
+        <IncomeEditForm
+          income={entry}
+          isSubmitting={updateIncome.isPending}
+          onSubmit={(input) => {
+            updateIncome.mutate(
+              { ...entry, ...input },
+              { onSuccess: onSaveEdit },
+            );
+          }}
+          onCancel={onSaveEdit}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+      <div className="flex flex-col gap-1">
+        <span className="text-sm text-muted-foreground">{entry.date}</span>
+        {entry.notes && (
+          <span className="text-sm text-muted-foreground">{entry.notes}</span>
+        )}
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="tabular-nums font-medium">
+          {formatCurrency(entry.amount, currency)}
+        </span>
+        {isYearClosed(closedYears, entry.date) ? (
+          <Badge variant="secondary">{t("common.closed")}</Badge>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={t("income.rowActions")}
+              >
+                <MoreVertical className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onSelect={() => onEdit(entry.incomeId)}>
+                {t("common.edit")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                variant="destructive"
+                onSelect={() => onDelete(entry)}
+              >
+                {t("common.delete")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+    </div>
   );
 }
