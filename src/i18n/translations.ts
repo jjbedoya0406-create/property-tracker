@@ -147,11 +147,7 @@ const en = {
   "tenancyForm.savingButton": "Saving…",
 
   "summary.title": "Summary",
-  "summary.modeTaxYear": "Tax year",
-  "summary.modeCustomRange": "Custom range",
   "summary.yearLabel": "Year",
-  "summary.fromLabel": "From",
-  "summary.toLabel": "To",
   "summary.moneyIn": "Money in",
   "summary.moneyOut": "Money out",
   "summary.moneyLeftOver": "Money left over",
@@ -340,11 +336,7 @@ const es: Record<TranslationKey, string> = {
   "tenancyForm.savingButton": "Guardando…",
 
   "summary.title": "Resumen",
-  "summary.modeTaxYear": "Año fiscal",
-  "summary.modeCustomRange": "Rango personalizado",
   "summary.yearLabel": "Año",
-  "summary.fromLabel": "Desde",
-  "summary.toLabel": "Hasta",
   "summary.moneyIn": "Dinero recibido",
   "summary.moneyOut": "Dinero gastado",
   "summary.moneyLeftOver": "Dinero restante",

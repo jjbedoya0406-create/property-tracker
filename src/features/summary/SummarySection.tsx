@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -9,7 +8,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/currency";
 import { useTranslation } from "../../i18n/useTranslation";
@@ -21,13 +19,6 @@ interface SummarySectionProps {
   propertyId: string;
 }
 
-type SummaryMode = "taxYear" | "custom";
-
-// PRD §11 open decision (Outcome 6): the income/expense summary period
-// scope should support both a tax-year selector and a custom range —
-// Outcome 4's own year selector was never built (see PropertyDetailPage/
-// ExpensesSection — no year scoping exists there yet), so this is a
-// self-contained implementation rather than a reuse of existing code.
 export function SummarySection({ propertyId }: SummarySectionProps) {
   const { t } = useTranslation();
   const { currency } = useSettings();
@@ -35,10 +26,7 @@ export function SummarySection({ propertyId }: SummarySectionProps) {
   const { data: expenses } = useExpenses(propertyId);
 
   const currentYear = new Date().getFullYear();
-  const [mode, setMode] = useState<SummaryMode>("taxYear");
   const [year, setYear] = useState(currentYear);
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
 
   const years = useMemo(() => {
     const datesYears = [...(income ?? []), ...(expenses ?? [])]
@@ -53,13 +41,9 @@ export function SummarySection({ propertyId }: SummarySectionProps) {
   }, [income, expenses, currentYear]);
 
   const inRange = useMemo(() => {
-    if (mode === "taxYear") {
-      const prefix = String(year);
-      return (date: string) => date.startsWith(prefix);
-    }
-    return (date: string) =>
-      (!fromDate || date >= fromDate) && (!toDate || date <= toDate);
-  }, [mode, year, fromDate, toDate]);
+    const prefix = String(year);
+    return (date: string) => date.startsWith(prefix);
+  }, [year]);
 
   const moneyIn = useMemo(
     () =>
@@ -83,61 +67,24 @@ export function SummarySection({ propertyId }: SummarySectionProps) {
         <CardTitle className="text-lg">{t("summary.title")}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <Tabs
-          value={mode}
-          onValueChange={(value) => setMode(value as SummaryMode)}
-        >
-          <TabsList>
-            <TabsTrigger value="taxYear">
-              {t("summary.modeTaxYear")}
-            </TabsTrigger>
-            <TabsTrigger value="custom">
-              {t("summary.modeCustomRange")}
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
-        {mode === "taxYear" ? (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="summary-year">{t("summary.yearLabel")}</Label>
-            <Select
-              value={String(year)}
-              onValueChange={(value) => setYear(Number(value))}
-            >
-              <SelectTrigger id="summary-year" className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map((y) => (
-                  <SelectItem key={y} value={String(y)}>
-                    {y}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        ) : (
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="summary-from">{t("summary.fromLabel")}</Label>
-              <Input
-                id="summary-from"
-                type="date"
-                value={fromDate}
-                onChange={(event) => setFromDate(event.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="summary-to">{t("summary.toLabel")}</Label>
-              <Input
-                id="summary-to"
-                type="date"
-                value={toDate}
-                onChange={(event) => setToDate(event.target.value)}
-              />
-            </div>
-          </div>
-        )}
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="summary-year">{t("summary.yearLabel")}</Label>
+          <Select
+            value={String(year)}
+            onValueChange={(value) => setYear(Number(value))}
+          >
+            <SelectTrigger id="summary-year" className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {years.map((y) => (
+                <SelectItem key={y} value={String(y)}>
+                  {y}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         <div className="divide-y divide-border rounded-lg border">
           <SummaryRow label={t("summary.moneyIn")} amount={moneyIn} currency={currency} />
