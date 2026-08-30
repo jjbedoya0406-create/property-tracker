@@ -2,12 +2,19 @@
 // legend, per the issue's own requirement. Index-based, not tied to any
 // particular category, since which category lands in which slot changes
 // month to month.
+//
+// Chosen for hue + lightness spread rather than brand cohesion — the
+// Design System's core palette clusters several tokens at similar dark,
+// desaturated tones (--action, --stamp, --ink-muted), which reads fine
+// for buttons/text but made adjacent pie slices hard to tell apart. Also
+// avoids reusing `--stamp` (#2B3A55), which the design doc reserves
+// exclusively for the "LOGGED" save-stamp mark.
 export const CATEGORY_CHART_COLORS = [
   "#2F5233", // action green (ledger's primary accent)
-  "#2B3A55", // stamp navy
   "#A13D2F", // error/rust red
-  "#8A6D3B", // warm ochre
-  "#5B685F", // ink-muted (reserved for "Other")
+  "#B8862E", // warm gold
+  "#4E6E8E", // dusty blue
+  "#9C9186", // warm taupe (reserved for "Other")
 ];
 
 interface DonutSlice {
