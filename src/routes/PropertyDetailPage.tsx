@@ -130,7 +130,13 @@ export function PropertyDetailPage() {
         : undefined;
 
   return (
-    <div className={cn("flex flex-col gap-6", activeProperty && "pb-20")}>
+    // 228px = the pinned Log income/expense bar's own height (60px) plus
+    // its position above the viewport bottom (bottom-40 = 160px) plus an
+    // 8px gap — measured directly, not guessed, since a mismatch here
+    // means the last card gets covered by the bar instead of stopping
+    // short of it. If the bar's position/height class below ever
+    // changes, this needs to move with it.
+    <div className={cn("flex flex-col gap-6", activeProperty && "pb-[228px]")}>
       <Link
         to="/properties"
         className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
