@@ -112,6 +112,28 @@ export async function createExpense(
   return expense;
 }
 
+// Bulk variant for the historical-data importer (issue #5) — dozens of
+// rows land in one append call instead of one API call per row.
+export async function createExpenses(
+  accessToken: string,
+  spreadsheetId: string,
+  inputs: CreateExpenseInput[],
+): Promise<Expense[]> {
+  const createdAt = new Date().toISOString();
+  const expenses: Expense[] = inputs.map((input) => ({
+    expenseId: crypto.randomUUID(),
+    createdAt,
+    ...input,
+  }));
+  await appendValues(
+    accessToken,
+    spreadsheetId,
+    DATA_RANGE,
+    expenses.map(expenseToRow),
+  );
+  return expenses;
+}
+
 // Sheets edits target a row number, not an ID, so every write first locates
 // the expense's current row — same tradeoff as categories.ts/properties.ts.
 async function findExpenseRowNumber(

@@ -68,6 +68,28 @@ export async function createIncome(
   return income;
 }
 
+// Bulk variant for the historical-data importer (issue #5) — dozens of
+// rows land in one append call instead of one API call per row.
+export async function createIncomes(
+  accessToken: string,
+  spreadsheetId: string,
+  inputs: CreateIncomeInput[],
+): Promise<Income[]> {
+  const createdAt = new Date().toISOString();
+  const incomeEntries: Income[] = inputs.map((input) => ({
+    incomeId: crypto.randomUUID(),
+    createdAt,
+    ...input,
+  }));
+  await appendValues(
+    accessToken,
+    spreadsheetId,
+    DATA_RANGE,
+    incomeEntries.map(incomeToRow),
+  );
+  return incomeEntries;
+}
+
 // Sheets edits target a row number, not an ID, so every write first locates
 // the entry's current row — same tradeoff as expenses.ts/categories.ts.
 async function findIncomeRowNumber(

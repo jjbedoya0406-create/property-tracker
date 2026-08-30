@@ -42,6 +42,30 @@ const en = {
   "driveMigration.runSuccess":
     "Done — files have been moved into their property folders.",
 
+  "historicalImport.title": "Import Historical Data",
+  "historicalImport.description":
+    "Upload a spreadsheet of past income and expenses to add them to your existing properties and categories.",
+  "historicalImport.previewButton": "Preview import",
+  "historicalImport.previewingButton": "Reading file…",
+  "historicalImport.previewError": "Failed to read the file.",
+  "historicalImport.unresolvedHeading":
+    "Needs a match before importing",
+  "historicalImport.unresolvedRowCount": "{count} row(s)",
+  "historicalImport.mapToPlaceholder": "Choose a match",
+  "historicalImport.needsReviewNotice":
+    "{count} row(s) are flagged for review (e.g. an assumed date) — check them after importing.",
+  "historicalImport.reconciliationHeading": "Reconciliation",
+  "historicalImport.reconciliationLine": "Income {income} · Expenses {expenses}",
+  "historicalImport.reconciliationMismatch":
+    "Doesn't match this file's own monthly total — check the mapping above.",
+  "historicalImport.dismissMismatch": "Dismiss this mismatch",
+  "historicalImport.reconciliationDismissed":
+    "Mismatch dismissed — this month will still be imported as computed.",
+  "historicalImport.runButton": "Import these transactions",
+  "historicalImport.runningButton": "Importing…",
+  "historicalImport.runError": "Failed to import.",
+  "historicalImport.runSuccess": "Done — the transactions have been imported.",
+
   "common.active": "Active",
   "common.archived": "Archived",
   "common.cancel": "Cancel",
@@ -267,6 +291,30 @@ const es: Record<TranslationKey, string> = {
   "driveMigration.runError": "No se pudieron mover los archivos.",
   "driveMigration.runSuccess":
     "Listo — los archivos se movieron a sus carpetas de propiedad.",
+
+  "historicalImport.title": "Importar datos históricos",
+  "historicalImport.description":
+    "Sube una hoja de cálculo con ingresos y gastos pasados para agregarlos a tus propiedades y categorías existentes.",
+  "historicalImport.previewButton": "Vista previa de la importación",
+  "historicalImport.previewingButton": "Leyendo archivo…",
+  "historicalImport.previewError": "No se pudo leer el archivo.",
+  "historicalImport.unresolvedHeading":
+    "Necesita una coincidencia antes de importar",
+  "historicalImport.unresolvedRowCount": "{count} fila(s)",
+  "historicalImport.mapToPlaceholder": "Elige una coincidencia",
+  "historicalImport.needsReviewNotice":
+    "{count} fila(s) están marcadas para revisión (p. ej. una fecha asumida) — revísalas después de importar.",
+  "historicalImport.reconciliationHeading": "Conciliación",
+  "historicalImport.reconciliationLine": "Ingresos {income} · Gastos {expenses}",
+  "historicalImport.reconciliationMismatch":
+    "No coincide con el total mensual del archivo — revisa la coincidencia arriba.",
+  "historicalImport.dismissMismatch": "Descartar esta discrepancia",
+  "historicalImport.reconciliationDismissed":
+    "Discrepancia descartada — este mes se importará tal como se calculó.",
+  "historicalImport.runButton": "Importar estas transacciones",
+  "historicalImport.runningButton": "Importando…",
+  "historicalImport.runError": "No se pudo importar.",
+  "historicalImport.runSuccess": "Listo — las transacciones se importaron.",
 
   "common.active": "Activas",
   "common.archived": "Archivadas",

@@ -6,6 +6,7 @@ import { useTranslation } from "../i18n/useTranslation";
 import { useSettings } from "../portfolio/context";
 import { ClosedYearsSection } from "../features/closedYears/ClosedYearsSection";
 import { DriveMigrationSection } from "../features/driveMigration/DriveMigrationSection";
+import { HistoricalImportSection } from "../features/historicalImport/HistoricalImportSection";
 import { useUpdateSettings } from "../features/settings/hooks";
 import type { Settings } from "../types";
 
@@ -58,6 +59,7 @@ export function SettingsPage() {
         </Alert>
       )}
       <DriveMigrationSection />
+      <HistoricalImportSection />
       <ClosedYearsSection />
     </div>
   );
