@@ -42,6 +42,21 @@ export function useAllExpenses() {
   });
 }
 
+// Rollup across every sibling unit in a building (issue #4's building-wide
+// Summary/Dashboard) — mirrors useIncomeForProperties exactly, the one
+// gap being an expenses equivalent didn't exist yet.
+export function useExpensesForProperties(propertyIds: string[]) {
+  const accessToken = useRequiredAccessToken();
+  const spreadsheetId = useSpreadsheetId();
+
+  return useQuery({
+    queryKey: queryKeys.expenses.all,
+    queryFn: () => listExpenses(accessToken, spreadsheetId),
+    select: (expenses) =>
+      expenses.filter((expense) => propertyIds.includes(expense.propertyId ?? "")),
+  });
+}
+
 // Building-scoped expenses (issue #7) — the Building tab's own shared
 // bills, distinct from any unit's expenses.
 export function useBuildingExpenses(buildingId: string) {

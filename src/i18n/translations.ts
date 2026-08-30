@@ -73,6 +73,7 @@ const en = {
 
   "property.backLink": "My properties",
   "property.loadError": "Failed to load property.",
+  "property.logIncomeQuickAction": "Log income",
 
   "buildings.addUnitButton": "Add unit",
   "buildings.promoteExplanation":
@@ -90,6 +91,7 @@ const en = {
 
   "expenses.title": "Expenses",
   "expenses.total": "Total",
+  "expenses.totalAllTime": "Total (all time)",
   "expenses.logButton": "Log expense",
   "expenses.loading": "Loading expenses…",
   "expenses.loadError": "Failed to load expenses.",
@@ -149,6 +151,7 @@ const en = {
     "No tenancy recorded yet — add one above to track contract dates and rent.",
   "tenancy.ongoing": "Ongoing",
   "tenancy.perMonth": "/ mo",
+  "tenancy.noActiveTenancy": "No active tenancy",
   "tenancy.movedOutLabel": "Moved out {date}",
   "tenancy.recordMoveOutButton": "Record move-out",
 
@@ -160,9 +163,15 @@ const en = {
 
   "summary.title": "Summary",
   "summary.yearLabel": "Year",
-  "summary.moneyIn": "Money in",
-  "summary.moneyOut": "Money out",
-  "summary.moneyLeftOver": "Money left over",
+  "summary.income": "Income",
+  "summary.expenses": "Expenses",
+
+  "dashboard.title": "Dashboard",
+  "dashboard.monthLabel": "Month",
+  "dashboard.otherCategory": "Other",
+  "dashboard.topCategoryHint": "Top category: {name} — {percent}%",
+  "dashboard.emptyHint": "No expenses this month",
+  "dashboard.backToDashboard": "Back to Dashboard",
 
   "categories.title": "Categories",
   "categories.noneForStatus": "No {status} categories.",
@@ -283,6 +292,7 @@ const es: Record<TranslationKey, string> = {
 
   "property.backLink": "Mis propiedades",
   "property.loadError": "No se pudo cargar la propiedad.",
+  "property.logIncomeQuickAction": "Registrar pago",
 
   "buildings.addUnitButton": "Agregar unidad",
   "buildings.promoteExplanation":
@@ -300,6 +310,7 @@ const es: Record<TranslationKey, string> = {
 
   "expenses.title": "Gastos",
   "expenses.total": "Total",
+  "expenses.totalAllTime": "Total (histórico)",
   "expenses.logButton": "Registrar gasto",
   "expenses.loading": "Cargando gastos…",
   "expenses.loadError": "No se pudieron cargar los gastos.",
@@ -360,6 +371,7 @@ const es: Record<TranslationKey, string> = {
     "Aún no hay arrendamientos registrados — agrega uno arriba para llevar el control de fechas y renta.",
   "tenancy.ongoing": "En curso",
   "tenancy.perMonth": "/ mes",
+  "tenancy.noActiveTenancy": "Sin arrendamiento activo",
   "tenancy.movedOutLabel": "Salió el {date}",
   "tenancy.recordMoveOutButton": "Registrar salida",
 
@@ -371,9 +383,15 @@ const es: Record<TranslationKey, string> = {
 
   "summary.title": "Resumen",
   "summary.yearLabel": "Año",
-  "summary.moneyIn": "Dinero recibido",
-  "summary.moneyOut": "Dinero gastado",
-  "summary.moneyLeftOver": "Dinero restante",
+  "summary.income": "Ingresos",
+  "summary.expenses": "Gastos",
+
+  "dashboard.title": "Panel",
+  "dashboard.monthLabel": "Mes",
+  "dashboard.otherCategory": "Otros",
+  "dashboard.topCategoryHint": "Categoría principal: {name} — {percent}%",
+  "dashboard.emptyHint": "No hay gastos este mes",
+  "dashboard.backToDashboard": "Volver al panel",
 
   "categories.title": "Categorías",
   "categories.noneForStatus": "No hay categorías {status}.",

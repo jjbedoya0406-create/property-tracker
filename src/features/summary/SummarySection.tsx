@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CollapsibleSectionCard } from "@/components/CollapsibleSectionCard";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -12,18 +12,27 @@ import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/currency";
 import { useTranslation } from "../../i18n/useTranslation";
 import { useSettings } from "../../portfolio/context";
-import { useIncome } from "../income/hooks";
-import { useExpenses } from "../expenses/hooks";
+import {
+  useScopedExpenses,
+  useScopedIncome,
+  type FinancialScope,
+} from "../properties/financialScope";
 
 interface SummarySectionProps {
-  propertyId: string;
+  scope: FinancialScope;
+  isExpanded: boolean;
+  onToggleExpanded: () => void;
 }
 
-export function SummarySection({ propertyId }: SummarySectionProps) {
+export function SummarySection({
+  scope,
+  isExpanded,
+  onToggleExpanded,
+}: SummarySectionProps) {
   const { t } = useTranslation();
   const { currency } = useSettings();
-  const { data: income } = useIncome(propertyId);
-  const { data: expenses } = useExpenses(propertyId);
+  const { data: income } = useScopedIncome(scope);
+  const { data: expenses } = useScopedExpenses(scope);
 
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
@@ -45,28 +54,31 @@ export function SummarySection({ propertyId }: SummarySectionProps) {
     return (date: string) => date.startsWith(prefix);
   }, [year]);
 
-  const moneyIn = useMemo(
+  const totalIncome = useMemo(
     () =>
       (income ?? [])
         .filter((entry) => inRange(entry.date))
         .reduce((sum, entry) => sum + entry.amount, 0),
     [income, inRange],
   );
-  const moneyOut = useMemo(
+  const totalExpenses = useMemo(
     () =>
       (expenses ?? [])
         .filter((entry) => inRange(entry.date))
         .reduce((sum, entry) => sum + entry.amount, 0),
     [expenses, inRange],
   );
-  const netTotal = moneyIn - moneyOut;
+
+  const hint = `${year}: ${t("summary.income")} ${formatCurrency(totalIncome, currency)} · ${t("summary.expenses")} ${formatCurrency(totalExpenses, currency)}`;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">{t("summary.title")}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+    <CollapsibleSectionCard
+      title={t("summary.title")}
+      hint={hint}
+      isExpanded={isExpanded}
+      onToggle={onToggleExpanded}
+    >
+      <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="summary-year">{t("summary.yearLabel")}</Label>
           <Select
@@ -87,21 +99,19 @@ export function SummarySection({ propertyId }: SummarySectionProps) {
         </div>
 
         <div className="divide-y divide-border rounded-lg border">
-          <SummaryRow label={t("summary.moneyIn")} amount={moneyIn} currency={currency} />
           <SummaryRow
-            label={t("summary.moneyOut")}
-            amount={-moneyOut}
+            label={t("summary.income")}
+            amount={totalIncome}
             currency={currency}
           />
           <SummaryRow
-            label={t("summary.moneyLeftOver")}
-            amount={netTotal}
+            label={t("summary.expenses")}
+            amount={-totalExpenses}
             currency={currency}
-            emphasize
           />
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </CollapsibleSectionCard>
   );
 }
 
@@ -109,20 +119,17 @@ function SummaryRow({
   label,
   amount,
   currency,
-  emphasize,
 }: {
   label: string;
   amount: number;
   currency: "USD" | "COP";
-  emphasize?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between gap-2 px-4 py-3">
-      <span className={cn(emphasize && "font-medium")}>{label}</span>
+      <span>{label}</span>
       <span
         className={cn(
           "tabular-nums",
-          emphasize ? "font-medium" : undefined,
           amount < 0 ? "text-destructive" : undefined,
         )}
       >

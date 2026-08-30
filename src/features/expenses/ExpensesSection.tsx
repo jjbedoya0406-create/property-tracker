@@ -4,7 +4,7 @@ import { AlertCircle, ExternalLink, MoreVertical } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CollapsibleSectionCard } from "@/components/CollapsibleSectionCard";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,9 +29,15 @@ import { useDeleteExpense, useExpenses, useUpdateExpense } from "./hooks";
 
 interface ExpensesSectionProps {
   propertyId: string;
+  isExpanded: boolean;
+  onToggleExpanded: () => void;
 }
 
-export function ExpensesSection({ propertyId }: ExpensesSectionProps) {
+export function ExpensesSection({
+  propertyId,
+  isExpanded,
+  onToggleExpanded,
+}: ExpensesSectionProps) {
   const { t } = useTranslation();
   const { currency } = useSettings();
   const { data: expenses, isPending, isError, error } = useExpenses(propertyId);
@@ -78,17 +84,20 @@ export function ExpensesSection({ propertyId }: ExpensesSectionProps) {
   }, [expenses, fromDate, toDate]);
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between gap-3">
-        <CardTitle className="text-lg">{t("expenses.title")}</CardTitle>
+    <>
+    <CollapsibleSectionCard
+      title={t("expenses.title")}
+      hint={`${t("expenses.totalAllTime")} ${formatCurrency(runningTotal, currency)}`}
+      isExpanded={isExpanded}
+      onToggle={onToggleExpanded}
+    >
+      <div className="flex flex-col gap-4">
         <p className="tabular-nums">
           <span className="text-muted-foreground">{t("expenses.total")}</span>{" "}
           <span className="font-medium">
             {formatCurrency(runningTotal, currency)}
           </span>
         </p>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
         <Button asChild className="self-start">
           <Link to={`/capture?propertyId=${propertyId}`}>
             {t("expenses.logButton")}
@@ -228,13 +237,14 @@ export function ExpensesSection({ propertyId }: ExpensesSectionProps) {
             )}
           </>
         )}
-      </CardContent>
-      {undoableDelete.pendingItem && (
-        <UndoBanner
-          message={t("expenses.deletedMessage")}
-          onUndo={undoableDelete.undo}
-        />
-      )}
-    </Card>
+      </div>
+    </CollapsibleSectionCard>
+    {undoableDelete.pendingItem && (
+      <UndoBanner
+        message={t("expenses.deletedMessage")}
+        onUndo={undoableDelete.undo}
+      />
+    )}
+    </>
   );
 }

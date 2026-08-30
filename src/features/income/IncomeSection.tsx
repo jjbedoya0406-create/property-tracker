@@ -3,7 +3,7 @@ import { AlertCircle, ChevronDown, MoreVertical } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CollapsibleSectionCard } from "@/components/CollapsibleSectionCard";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,9 +41,15 @@ function formatPaymentsCount(count: number, t: TranslateFn): string {
 
 interface IncomeSectionProps {
   propertyId: string;
+  isExpanded: boolean;
+  onToggleExpanded: () => void;
 }
 
-export function IncomeSection({ propertyId }: IncomeSectionProps) {
+export function IncomeSection({
+  propertyId,
+  isExpanded,
+  onToggleExpanded,
+}: IncomeSectionProps) {
   const { t } = useTranslation();
   const { currency, language } = useSettings();
   const { data: income, isPending, isError, error } = useIncome(propertyId);
@@ -85,17 +91,20 @@ export function IncomeSection({ propertyId }: IncomeSectionProps) {
   }
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between gap-3">
-        <CardTitle className="text-lg">{t("income.title")}</CardTitle>
+    <>
+    <CollapsibleSectionCard
+      title={t("income.title")}
+      hint={`${t("income.totalAllTime")} ${formatCurrency(allTimeTotal, currency)}`}
+      isExpanded={isExpanded}
+      onToggle={onToggleExpanded}
+    >
+      <div className="flex flex-col gap-4">
         <p className="tabular-nums">
           <span className="text-muted-foreground">{headlineLabel}</span>{" "}
           <span className="font-medium">
             {formatCurrency(headlineTotal, currency)}
           </span>
         </p>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
         {showAddForm ? (
           <IncomeForm
             isSubmitting={createIncome.isPending}
@@ -222,14 +231,15 @@ export function IncomeSection({ propertyId }: IncomeSectionProps) {
             )}
           </>
         )}
-      </CardContent>
-      {undoableDelete.pendingItem && (
-        <UndoBanner
-          message={t("income.deletedMessage")}
-          onUndo={undoableDelete.undo}
-        />
-      )}
-    </Card>
+      </div>
+    </CollapsibleSectionCard>
+    {undoableDelete.pendingItem && (
+      <UndoBanner
+        message={t("income.deletedMessage")}
+        onUndo={undoableDelete.undo}
+      />
+    )}
+    </>
   );
 }
 

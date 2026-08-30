@@ -2,8 +2,8 @@ import { useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { CollapsibleSectionCard } from "@/components/CollapsibleSectionCard";
 import { formatCurrency } from "@/lib/currency";
 import { useTranslation } from "../../i18n/useTranslation";
 import { useSettings } from "../../portfolio/context";
@@ -13,9 +13,15 @@ import { useCreateTenancy, useTenancies, useUpdateTenancy } from "./hooks";
 
 interface TenancySectionProps {
   propertyId: string;
+  isExpanded: boolean;
+  onToggleExpanded: () => void;
 }
 
-export function TenancySection({ propertyId }: TenancySectionProps) {
+export function TenancySection({
+  propertyId,
+  isExpanded,
+  onToggleExpanded,
+}: TenancySectionProps) {
   const { t } = useTranslation();
   const { currency } = useSettings();
   const {
@@ -33,13 +39,19 @@ export function TenancySection({ propertyId }: TenancySectionProps) {
   const sorted = [...(tenancies ?? [])].sort((a, b) =>
     a.contractStart < b.contractStart ? 1 : -1,
   );
+  const ongoing = sorted.find((tenancy) => !tenancy.actualMoveOutDate);
+  const hint = ongoing
+    ? `${formatCurrency(ongoing.rentRate, currency)} ${t("tenancy.perMonth")}`
+    : t("tenancy.noActiveTenancy");
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">{t("tenancy.title")}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+    <CollapsibleSectionCard
+      title={t("tenancy.title")}
+      hint={hint}
+      isExpanded={isExpanded}
+      onToggle={onToggleExpanded}
+    >
+      <div className="flex flex-col gap-4">
         {showAddForm ? (
           <TenancyForm
             isSubmitting={createTenancy.isPending}
@@ -92,8 +104,8 @@ export function TenancySection({ propertyId }: TenancySectionProps) {
             ))}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </CollapsibleSectionCard>
   );
 }
 
