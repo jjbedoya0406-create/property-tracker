@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AlertCircle, Building2, ChevronDown, ChevronRight, Home } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -7,24 +7,54 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoggedStamp } from "@/components/LoggedStamp";
+import { formatCurrency } from "@/lib/currency";
+import { formatMonthLabel } from "@/lib/monthLabel";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "../i18n/useTranslation";
-import type { Building, Property, PropertyStatus } from "../types";
+import { useSettings } from "../portfolio/context";
+import type { Building, Currency, Expense, Income, Property, PropertyStatus } from "../types";
 import { useBuildings } from "../features/buildings/hooks";
+import { useAllExpenses } from "../features/expenses/hooks";
+import { useAllIncome } from "../features/income/hooks";
 import { groupPropertiesByBuilding } from "../features/properties/groupByBuilding";
+import {
+  computePortfolioTotals,
+  computePropertyPreview,
+  type PropertyPreview,
+} from "../features/properties/portfolioSummary";
 import { PropertyForm } from "../features/properties/PropertyForm";
 import { useCreateProperty, useProperties } from "../features/properties/hooks";
 
-const EXPAND_UNITS_THRESHOLD = 3;
-
 export function PropertiesListPage() {
   const { t } = useTranslation();
+  const { language, currency } = useSettings();
   const { data: properties, isPending, isError, error } = useProperties();
   const { data: buildings } = useBuildings();
+  const { data: allIncome } = useAllIncome();
+  const { data: allExpenses } = useAllExpenses();
   const createProperty = useCreateProperty();
   const [statusFilter, setStatusFilter] = useState<PropertyStatus>("active");
   const [showAddForm, setShowAddForm] = useState(false);
   const [justCreatedId, setJustCreatedId] = useState<string | null>(null);
+
+  const currentMonth = useMemo(() => new Date().toISOString().slice(0, 7), []);
+
+  const portfolioTotals = useMemo(() => {
+    if (!properties || !allIncome || !allExpenses) {
+      return { income: 0, expenses: 0 };
+    }
+    const activeIds = new Set(
+      properties.filter((p) => p.status === "active").map((p) => p.propertyId),
+    );
+    const income = allIncome.filter((entry) => activeIds.has(entry.propertyId));
+    // Building-shared expenses (buildingId, no propertyId) always count —
+    // buildings have no active/archived concept of their own.
+    const expenses = allExpenses.filter((entry) =>
+      entry.propertyId ? activeIds.has(entry.propertyId) : true,
+    );
+    return computePortfolioTotals(income, expenses, currentMonth);
+  }, [properties, allIncome, allExpenses, currentMonth]);
+  const portfolioNet = portfolioTotals.income - portfolioTotals.expenses;
 
   if (isPending) {
     return <p className="text-muted-foreground">{t("properties.loading")}</p>;
@@ -64,6 +94,33 @@ export function PropertiesListPage() {
         )}
       </div>
 
+      {!hasNoPropertiesAtAll && (
+        <Card>
+          <CardContent className="flex flex-col items-center gap-1 py-6 text-center">
+            <span className="text-sm text-muted-foreground">
+              {t("properties.portfolioNetLabel", {
+                month: formatMonthLabel(currentMonth, language),
+              })}
+            </span>
+            <span
+              className={cn(
+                "text-3xl font-medium tabular-nums",
+                portfolioNet < 0 && "text-destructive",
+              )}
+            >
+              {portfolioNet < 0 ? "-" : "+"}
+              {formatCurrency(Math.abs(portfolioNet), currency)}
+            </span>
+            <span className="text-sm text-muted-foreground">
+              {t("properties.portfolioIncomeExpenses", {
+                income: formatCurrency(portfolioTotals.income, currency),
+                expenses: formatCurrency(portfolioTotals.expenses, currency),
+              })}
+            </span>
+          </CardContent>
+        </Card>
+      )}
+
       {hasNoPropertiesAtAll && !showAddForm && (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
@@ -94,12 +151,27 @@ export function PropertiesListPage() {
                       key={item.property.propertyId}
                       property={item.property}
                       isJustCreated={item.property.propertyId === justCreatedId}
+                      currency={currency}
+                      preview={previewForStandalone(
+                        item.property,
+                        allIncome ?? [],
+                        allExpenses ?? [],
+                        currentMonth,
+                      )}
                     />
                   ) : (
                     <BuildingListRow
                       key={item.building.buildingId}
                       building={item.building}
                       units={item.units}
+                      currency={currency}
+                      preview={previewForBuilding(
+                        item.building,
+                        item.units,
+                        allIncome ?? [],
+                        allExpenses ?? [],
+                        currentMonth,
+                      )}
                     />
                   ),
                 )}
@@ -142,12 +214,81 @@ export function PropertiesListPage() {
   );
 }
 
+function previewForStandalone(
+  property: Property,
+  allIncome: Income[],
+  allExpenses: Expense[],
+  month: string,
+): PropertyPreview {
+  const income = allIncome.filter((e) => e.propertyId === property.propertyId);
+  const expenses = allExpenses.filter(
+    (e) => e.propertyId === property.propertyId,
+  );
+  return computePropertyPreview(income, expenses, income.length > 0, month);
+}
+
+function previewForBuilding(
+  building: Building,
+  units: Property[],
+  allIncome: Income[],
+  allExpenses: Expense[],
+  month: string,
+): PropertyPreview {
+  const unitIds = units.map((u) => u.propertyId);
+  const income = allIncome.filter((e) => unitIds.includes(e.propertyId));
+  const expenses = allExpenses.filter(
+    (e) =>
+      (e.propertyId && unitIds.includes(e.propertyId)) ||
+      e.buildingId === building.buildingId,
+  );
+  return computePropertyPreview(income, expenses, income.length > 0, month);
+}
+
+function RowPreview({
+  preview,
+  currency,
+}: {
+  preview: PropertyPreview;
+  currency: Currency;
+}) {
+  const { t } = useTranslation();
+  if (preview.kind === "noActivity") {
+    return (
+      <span className="text-sm text-muted-foreground">
+        {t("properties.noActivityYet")}
+      </span>
+    );
+  }
+  if (preview.kind === "expensesOnly") {
+    return (
+      <span className="text-sm tabular-nums text-muted-foreground">
+        {formatCurrency(preview.amount, currency)}
+      </span>
+    );
+  }
+  return (
+    <span
+      className={cn(
+        "text-sm tabular-nums",
+        preview.amount < 0 ? "text-destructive" : "text-muted-foreground",
+      )}
+    >
+      {preview.amount < 0 ? "-" : "+"}
+      {formatCurrency(Math.abs(preview.amount), currency)}
+    </span>
+  );
+}
+
 function StandalonePropertyRow({
   property,
   isJustCreated,
+  currency,
+  preview,
 }: {
   property: Property;
   isJustCreated: boolean;
+  currency: Currency;
+  preview: PropertyPreview;
 }) {
   const { t } = useTranslation();
   return (
@@ -155,9 +296,14 @@ function StandalonePropertyRow({
       to={`/properties/${property.propertyId}`}
       className="flex min-h-11 items-center justify-between gap-3 px-4 py-3 hover:bg-muted/50"
     >
-      <span className="flex items-center gap-2.5">
-        <Home className="size-4 text-muted-foreground" />
-        <span className="font-medium">{property.name}</span>
+      <span className="flex items-center gap-3">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+          <Home className="size-4 text-primary" />
+        </span>
+        <span className="flex flex-col gap-0.5">
+          <span className="font-medium">{property.name}</span>
+          <RowPreview preview={preview} currency={currency} />
+        </span>
       </span>
       <div className="flex items-center gap-2">
         {isJustCreated && <LoggedStamp />}
@@ -173,18 +319,21 @@ function StandalonePropertyRow({
 // Tapping the row body navigates straight into the building detail view
 // (overview); the disclosure chevron is a separate control that only
 // toggles whether unit names show beneath it in place — the two never
-// share a tap target (issue #12).
+// share a tap target (issue #12). Always starts collapsed regardless of
+// unit count — no small-building exception (issue #13).
 function BuildingListRow({
   building,
   units,
+  currency,
+  preview,
 }: {
   building: Building;
   units: Property[];
+  currency: Currency;
+  preview: PropertyPreview;
 }) {
   const { t } = useTranslation();
-  const [isExpanded, setIsExpanded] = useState(
-    units.length <= EXPAND_UNITS_THRESHOLD,
-  );
+  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <div>
@@ -198,18 +347,22 @@ function BuildingListRow({
         }
         className="flex min-h-11 w-full items-center justify-between gap-2 px-4 py-3 text-left hover:bg-muted/50"
       >
-        <span className="flex items-center gap-2.5">
-          <Building2 className="size-4 text-muted-foreground" />
-          <span className="flex flex-col">
+        <span className="flex items-center gap-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#2B3A55]/10">
+            <Building2 className="size-4 text-[#2B3A55]" />
+          </span>
+          <span className="flex flex-col gap-0.5">
             <span className="font-medium">{building.name}</span>
-            <span className="text-sm text-muted-foreground">
-              {t("properties.unitCount", { count: String(units.length) })}
+            <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <span>{t("properties.unitCount", { count: String(units.length) })}</span>
+              <span aria-hidden="true">·</span>
+              <RowPreview preview={preview} currency={currency} />
             </span>
           </span>
         </span>
         <ChevronDown
           className={cn(
-            "size-4 text-muted-foreground transition-transform",
+            "size-4 shrink-0 text-muted-foreground transition-transform",
             isExpanded && "rotate-180",
           )}
         />

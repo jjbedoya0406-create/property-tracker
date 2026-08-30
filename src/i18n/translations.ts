@@ -65,6 +65,9 @@ const en = {
   "properties.loadError":
     "Couldn't load your properties. Try reloading the page.",
   "properties.unitCount": "{count} units",
+  "properties.portfolioNetLabel": "Portfolio net · {month}",
+  "properties.portfolioIncomeExpenses": "Income {income} · Expenses {expenses}",
+  "properties.noActivityYet": "No activity yet",
   "properties.expandUnits": "Show units",
   "properties.collapseUnits": "Hide units",
 
@@ -284,6 +287,9 @@ const es: Record<TranslationKey, string> = {
   "properties.loadError":
     "No se pudieron cargar tus propiedades. Intenta recargar la página.",
   "properties.unitCount": "{count} unidades",
+  "properties.portfolioNetLabel": "Neto del portafolio · {month}",
+  "properties.portfolioIncomeExpenses": "Ingresos {income} · Gastos {expenses}",
+  "properties.noActivityYet": "Sin actividad aún",
   "properties.expandUnits": "Mostrar unidades",
   "properties.collapseUnits": "Ocultar unidades",
 
