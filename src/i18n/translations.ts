@@ -68,8 +68,6 @@ const en = {
   "properties.portfolioNetLabel": "Portfolio net · {month}",
   "properties.portfolioIncomeExpenses": "Income {income} · Expenses {expenses}",
   "properties.noActivityYet": "No activity yet",
-  "properties.expandUnits": "Show units",
-  "properties.collapseUnits": "Hide units",
 
   "propertyForm.nameLabel": "Name",
   "propertyForm.addressLabel": "Address",
@@ -91,6 +89,11 @@ const en = {
   "buildings.sharedBillsTitle": "Shared bills",
   "buildings.noSharedBillsYet":
     "No shared bills logged yet — log one above to get started.",
+  "buildings.unitsTitle": "Units",
+  "buildings.detailsTitle": "Building details",
+  "buildings.addressLabel": "Address",
+  "buildings.noAddress": "No address on file",
+  "buildings.logExpenseAction": "Log building expense",
 
   "expenses.title": "Expenses",
   "expenses.total": "Total",
@@ -111,6 +114,7 @@ const en = {
 
   "expenseForm.propertyLabel": "Property",
   "expenseForm.propertyPlaceholder": "Select a property…",
+  "expenseForm.buildingLabel": "Building",
   "expenseForm.takePhotoButton": "Take photo of receipt",
   "expenseForm.receiptPreviewAlt": "Receipt preview",
   "expenseForm.readingReceipt": "Reading receipt…",
@@ -290,8 +294,6 @@ const es: Record<TranslationKey, string> = {
   "properties.portfolioNetLabel": "Neto del portafolio · {month}",
   "properties.portfolioIncomeExpenses": "Ingresos {income} · Gastos {expenses}",
   "properties.noActivityYet": "Sin actividad aún",
-  "properties.expandUnits": "Mostrar unidades",
-  "properties.collapseUnits": "Ocultar unidades",
 
   "propertyForm.nameLabel": "Nombre",
   "propertyForm.addressLabel": "Dirección",
@@ -313,6 +315,11 @@ const es: Record<TranslationKey, string> = {
   "buildings.sharedBillsTitle": "Cuentas compartidas",
   "buildings.noSharedBillsYet":
     "Aún no hay cuentas compartidas registradas — registra una arriba para empezar.",
+  "buildings.unitsTitle": "Unidades",
+  "buildings.detailsTitle": "Detalles del edificio",
+  "buildings.addressLabel": "Dirección",
+  "buildings.noAddress": "Sin dirección registrada",
+  "buildings.logExpenseAction": "Registrar gasto del edificio",
 
   "expenses.title": "Gastos",
   "expenses.total": "Total",
@@ -334,6 +341,7 @@ const es: Record<TranslationKey, string> = {
 
   "expenseForm.propertyLabel": "Propiedad",
   "expenseForm.propertyPlaceholder": "Selecciona una propiedad…",
+  "expenseForm.buildingLabel": "Edificio",
   "expenseForm.takePhotoButton": "Tomar foto del recibo",
   "expenseForm.receiptPreviewAlt": "Vista previa del recibo",
   "expenseForm.readingReceipt": "Leyendo recibo…",

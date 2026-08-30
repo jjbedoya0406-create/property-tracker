@@ -19,11 +19,17 @@ export function CapturePage() {
         <ExpenseForm
           initialPropertyId={initialPropertyId}
           initialBuildingId={initialBuildingId}
-          onSaved={(propertyId, expenseId) =>
-            navigate(`/properties/${propertyId}`, {
-              state: { justLoggedExpenseId: expenseId },
-            })
-          }
+          onSaved={(target, expenseId) => {
+            if ("propertyId" in target) {
+              navigate(`/properties/${target.propertyId}`, {
+                state: { justLoggedExpenseId: expenseId },
+              });
+            } else {
+              // Building-scoped expenses have no single unit to land
+              // on — go to Building Info instead (issue #14).
+              navigate(`/buildings/${target.buildingId}`);
+            }
+          }}
         />
       </CardContent>
     </Card>

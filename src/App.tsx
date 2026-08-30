@@ -5,6 +5,7 @@ import { BottomTabBar } from "./components/BottomTabBar";
 import { queryClient } from "./queryClient";
 import { RequirePortfolio } from "./portfolio/RequirePortfolio";
 import {
+  BuildingInfoPage,
   CapturePage,
   CategoriesListPage,
   Layout,
@@ -49,7 +50,7 @@ function App() {
                 />
                 <Route
                   path="buildings/:buildingId"
-                  element={<PropertyDetailPage />}
+                  element={<BuildingInfoPage />}
                 />
                 <Route path="capture" element={<CapturePage />} />
                 <Route path="categories" element={<CategoriesListPage />} />

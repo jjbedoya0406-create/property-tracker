@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertCircle, Building2, ChevronDown, ChevronRight, Home } from "lucide-react";
+import { AlertCircle, Building2, ChevronRight, Home } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -316,11 +316,9 @@ function StandalonePropertyRow({
   );
 }
 
-// Tapping the row body navigates straight into the building detail view
-// (overview); the disclosure chevron is a separate control that only
-// toggles whether unit names show beneath it in place — the two never
-// share a tap target (issue #12). Always starts collapsed regardless of
-// unit count — no small-building exception (issue #13).
+// Navigates straight to the Building Info screen (issue #14) — every
+// row on this list navigates on tap now, no inline expand/collapse
+// anywhere (that behavior, from issue #13, is superseded).
 function BuildingListRow({
   building,
   units,
@@ -333,54 +331,25 @@ function BuildingListRow({
   preview: PropertyPreview;
 }) {
   const { t } = useTranslation();
-  const [isExpanded, setIsExpanded] = useState(false);
-
   return (
-    <div>
-      <button
-        type="button"
-        onClick={() => setIsExpanded((v) => !v)}
-        aria-label={
-          isExpanded
-            ? t("properties.collapseUnits")
-            : t("properties.expandUnits")
-        }
-        className="flex min-h-11 w-full items-center justify-between gap-2 px-4 py-3 text-left hover:bg-muted/50"
-      >
-        <span className="flex items-center gap-3">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#2B3A55]/10">
-            <Building2 className="size-4 text-[#2B3A55]" />
-          </span>
-          <span className="flex flex-col gap-0.5">
-            <span className="font-medium">{building.name}</span>
-            <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <span>{t("properties.unitCount", { count: String(units.length) })}</span>
-              <span aria-hidden="true">·</span>
-              <RowPreview preview={preview} currency={currency} />
-            </span>
+    <Link
+      to={`/buildings/${building.buildingId}`}
+      className="flex min-h-11 items-center justify-between gap-3 px-4 py-3 hover:bg-muted/50"
+    >
+      <span className="flex items-center gap-3">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#2B3A55]/10">
+          <Building2 className="size-4 text-[#2B3A55]" />
+        </span>
+        <span className="flex flex-col gap-0.5">
+          <span className="font-medium">{building.name}</span>
+          <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <span>{t("properties.unitCount", { count: String(units.length) })}</span>
+            <span aria-hidden="true">·</span>
+            <RowPreview preview={preview} currency={currency} />
           </span>
         </span>
-        <ChevronDown
-          className={cn(
-            "size-4 shrink-0 text-muted-foreground transition-transform",
-            isExpanded && "rotate-180",
-          )}
-        />
-      </button>
-      {isExpanded && (
-        <div className="flex flex-col divide-y divide-border border-t border-border bg-muted/30">
-          {units.map((unit) => (
-            <Link
-              key={unit.propertyId}
-              to={`/properties/${unit.propertyId}`}
-              className="flex min-h-11 items-center justify-between gap-3 py-3 pr-4 pl-10 hover:bg-muted/50"
-            >
-              <span>{unit.name}</span>
-              <ChevronRight className="size-4 text-muted-foreground" />
-            </Link>
-          ))}
-        </div>
-      )}
-    </div>
+      </span>
+      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+    </Link>
   );
 }

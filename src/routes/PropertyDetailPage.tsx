@@ -130,13 +130,15 @@ export function PropertyDetailPage() {
         : undefined;
 
   return (
-    // 132px = BottomTabBar's real height (55px, measured) + the action
-    // bar's own height (69px, measured) + an 8px gap, so the last card
-    // fully clears the bar instead of being covered by it. Measured
-    // directly against the real compiled CSS, not guessed — if the bar's
-    // bottom-[55px] position or its content below changes height, this
-    // needs to move with it.
-    <div className={cn("flex flex-col gap-6", activeProperty && "pb-[132px]")}>
+    // The full clearance needed is 132px (BottomTabBar's 55px + the
+    // action bar's own 69px + an 8px gap), but PortfolioLayout (App.tsx)
+    // already wraps every page in its own pb-24 (96px) — this only
+    // needs to add the remainder (132 - 96 = 36px = pb-9), confirmed by
+    // measuring the real, fully-nested layout end to end rather than
+    // this div in isolation (an earlier pass here got this wrong by
+    // missing that outer padding). If the bar's height/position changes,
+    // this needs to move with it.
+    <div className={cn("flex flex-col gap-6", activeProperty && "pb-9")}>
       <Link
         to="/properties"
         className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"

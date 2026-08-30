@@ -25,15 +25,24 @@ import { useCreateExpenseWithReceipt } from "./hooks";
 import { normalizeImageForOcr } from "./imagePreprocessing";
 import { extractGuessesFromText, recognizeReceiptText } from "./ocr";
 import { ReceiptCaptureInput } from "./ReceiptCaptureInput";
-import { createExpenseInputSchema } from "./schema";
+import {
+  createExpenseEditInputSchema,
+  createExpenseInputSchema,
+} from "./schema";
+
+export type ExpenseSaveTarget =
+  | { propertyId: string }
+  | { buildingId: string };
 
 interface ExpenseFormProps {
   initialPropertyId?: string;
-  // Arriving from a Building tab's own "Log expense" link — no specific
-  // unit was chosen, so the property dropdown/scope default resolve from
-  // the building instead (see the effect below).
+  // Arriving from a building's "Log expense" link (either the old
+  // inline overview or the pinned action on Building Info, issue #14) —
+  // this is unambiguously a building-level expense from the start, so
+  // there's no property to pick and no unit/building choice to make
+  // (see the isBuildingOnly branch below).
   initialBuildingId?: string;
-  onSaved: (propertyId: string, expenseId: string) => void;
+  onSaved: (target: ExpenseSaveTarget, expenseId: string) => void;
 }
 
 export function ExpenseForm({
@@ -49,10 +58,13 @@ export function ExpenseForm({
   const { data: closedYears } = useClosedYears();
   const createExpense = useCreateExpenseWithReceipt();
 
+  const isBuildingOnly = Boolean(initialBuildingId);
+  const targetBuilding = initialBuildingId
+    ? buildings?.find((b) => b.buildingId === initialBuildingId)
+    : undefined;
+
   const [propertyId, setPropertyId] = useState(initialPropertyId ?? "");
-  const [scope, setScope] = useState<"unit" | "building">(
-    initialBuildingId ? "building" : "unit",
-  );
+  const [scope, setScope] = useState<"unit" | "building">("unit");
   const [photo, setPhoto] = useState<Blob | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
   const [isRunningOcr, setIsRunningOcr] = useState(false);
@@ -61,22 +73,6 @@ export function ExpenseForm({
   const [categoryId, setCategoryId] = useState("");
   const [notes, setNotes] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
-
-  // Arriving via a building's "Log expense" link supplies a buildingId,
-  // not a specific unit — once properties load, pick any one of that
-  // building's units as the dropdown's context (siblings/building are
-  // derived from whichever unit is selected either way).
-  useEffect(() => {
-    if (propertyId || !initialBuildingId || !properties) {
-      return;
-    }
-    const firstUnit = properties.find(
-      (p) => p.buildingId === initialBuildingId,
-    );
-    if (firstUnit) {
-      setPropertyId(firstUnit.propertyId);
-    }
-  }, [propertyId, initialBuildingId, properties]);
 
   // Revoke the object URL when replaced/unmounted to avoid leaking memory.
   useEffect(() => {
@@ -153,6 +149,45 @@ export function ExpenseForm({
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
+
+    if (isBuildingOnly) {
+      const result = createExpenseEditInputSchema(t).safeParse({
+        amount: parseCurrencyAmount(amount, currency),
+        date,
+        categoryId,
+        notes,
+      });
+      if (!result.success) {
+        setFormError(
+          result.error.issues[0]?.message ?? t("validation.invalidInput"),
+        );
+        return;
+      }
+      if (isYearClosed(closedYears ?? [], result.data.date)) {
+        setFormError(
+          t("errors.yearClosed", { year: result.data.date.slice(0, 4) }),
+        );
+        return;
+      }
+      if (!targetBuilding) {
+        setFormError(t("errors.saveExpenseFailed"));
+        return;
+      }
+      setFormError(null);
+      createExpense.mutate(
+        { ...result.data, target: { scope: "building", building: targetBuilding }, photo },
+        {
+          onSuccess: (expense) =>
+            onSaved({ buildingId: targetBuilding.buildingId }, expense.expenseId),
+          onError: (err) =>
+            setFormError(
+              err instanceof Error ? err.message : t("errors.saveExpenseFailed"),
+            ),
+        },
+      );
+      return;
+    }
+
     const result = createExpenseInputSchema(t).safeParse({
       propertyId,
       amount: parseCurrencyAmount(amount, currency),
@@ -192,11 +227,8 @@ export function ExpenseForm({
     createExpense.mutate(
       { ...rest, target, photo },
       {
-        // Always returns to the unit that was selected/context'd from,
-        // regardless of whether the expense itself ended up unit- or
-        // building-scoped — from there the Building tab is one tap away.
         onSuccess: (expense) =>
-          onSaved(property.propertyId, expense.expenseId),
+          onSaved({ propertyId: property.propertyId }, expense.expenseId),
         onError: (err) =>
           setFormError(
             err instanceof Error ? err.message : t("errors.saveExpenseFailed"),
@@ -209,57 +241,78 @@ export function ExpenseForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="expense-property">
-          {t("expenseForm.propertyLabel")}
-        </Label>
-        <Select value={propertyId} onValueChange={setPropertyId}>
-          <SelectTrigger id="expense-property" className="w-full">
-            <SelectValue placeholder={t("expenseForm.propertyPlaceholder")} />
-          </SelectTrigger>
-          <SelectContent>
-            {activeProperties.map((property) => (
-              <SelectItem key={property.propertyId} value={property.propertyId}>
-                {property.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Only for a unit that actually belongs to a multi-unit building —
-          a standalone property never shows this (issue #7, Requirement
-          8's "single-unit collapse" applied to capture too). */}
-      {isMultiUnit && (
+      {isBuildingOnly ? (
+        // Arrived via a building's own "Log expense" link — this is
+        // already unambiguous, so there's nothing to pick: no property
+        // dropdown showing an arbitrary unit, no unit/building toggle.
+        // Just a clear, non-interactive confirmation of what it's for.
         <div className="flex flex-col gap-1.5">
-          <Label>{t("expenseForm.scopeLabel")}</Label>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setScope("unit")}
-              className={cn(
-                "rounded-lg border p-3 text-left text-sm font-medium",
-                scope === "unit"
-                  ? "border-primary bg-primary/5"
-                  : "border-border",
-              )}
-            >
-              {t("expenseForm.scopeUnit")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setScope("building")}
-              className={cn(
-                "rounded-lg border p-3 text-left text-sm font-medium",
-                scope === "building"
-                  ? "border-primary bg-primary/5"
-                  : "border-border",
-              )}
-            >
-              {t("expenseForm.scopeBuilding")}
-            </button>
-          </div>
+          <Label>{t("expenseForm.buildingLabel")}</Label>
+          <p className="rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm font-medium">
+            {targetBuilding?.name ?? t("common.loading")}
+          </p>
         </div>
+      ) : (
+        <>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="expense-property">
+              {t("expenseForm.propertyLabel")}
+            </Label>
+            <Select value={propertyId} onValueChange={setPropertyId}>
+              <SelectTrigger id="expense-property" className="w-full">
+                <SelectValue
+                  placeholder={t("expenseForm.propertyPlaceholder")}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {activeProperties.map((property) => (
+                  <SelectItem
+                    key={property.propertyId}
+                    value={property.propertyId}
+                  >
+                    {property.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Only for a unit that actually belongs to a multi-unit
+              building — a standalone property never shows this (issue
+              #7, Requirement 8's "single-unit collapse" applied to
+              capture too). */}
+          {isMultiUnit && (
+            <div className="flex flex-col gap-1.5">
+              <Label>{t("expenseForm.scopeLabel")}</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setScope("unit")}
+                  className={cn(
+                    "rounded-lg border p-3 text-left text-sm font-medium",
+                    scope === "unit"
+                      ? "border-primary bg-primary/5"
+                      : "border-border",
+                  )}
+                >
+                  {t("expenseForm.scopeUnit")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScope("building")}
+                  className={cn(
+                    "rounded-lg border p-3 text-left text-sm font-medium",
+                    scope === "building"
+                      ? "border-primary bg-primary/5"
+                      : "border-border",
+                  )}
+                >
+                  {t("expenseForm.scopeBuilding")}
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       <div className="flex flex-col gap-2">
