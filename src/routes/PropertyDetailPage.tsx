@@ -130,13 +130,13 @@ export function PropertyDetailPage() {
         : undefined;
 
   return (
-    // 228px = the pinned Log income/expense bar's own height (60px) plus
-    // its position above the viewport bottom (bottom-40 = 160px) plus an
-    // 8px gap — measured directly, not guessed, since a mismatch here
-    // means the last card gets covered by the bar instead of stopping
-    // short of it. If the bar's position/height class below ever
-    // changes, this needs to move with it.
-    <div className={cn("flex flex-col gap-6", activeProperty && "pb-[228px]")}>
+    // 132px = BottomTabBar's real height (55px, measured) + the action
+    // bar's own height (69px, measured) + an 8px gap, so the last card
+    // fully clears the bar instead of being covered by it. Measured
+    // directly against the real compiled CSS, not guessed — if the bar's
+    // bottom-[55px] position or its content below changes height, this
+    // needs to move with it.
+    <div className={cn("flex flex-col gap-6", activeProperty && "pb-[132px]")}>
       <Link
         to="/properties"
         className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
@@ -380,17 +380,19 @@ export function PropertyDetailPage() {
       {/* Only when a specific unit (or standalone property) is active —
           both income and expenses are unit-scoped (issue #7, Requirement
           3), so there's no single target to log against from the
-          building overview. Positioned above where UndoBanner sits
-          (bottom-24) so the two never overlap if both happen to show at
-          once. Log expense still hands off to the Capture flow (OCR) —
-          only Log income gets an inline form here. The top border +
-          background turn this into a visibly persistent toolbar rather
-          than buttons floating loose over whatever content is scrolled
-          beneath them. Truly `fixed` to the viewport (not just trailing
+          building overview. Log expense still hands off to the Capture
+          flow (OCR) — only Log income gets an inline form here. The top
+          border + background turn this into a visibly persistent
+          toolbar rather than buttons floating loose over whatever
+          content is scrolled beneath them. Sits flush against
+          BottomTabBar (bottom-[55px] = its real measured height, not
+          guessed) — UndoBanner is repositioned to stack above this bar
+          instead of overlapping it, since the two always coexist on
+          this page. Truly `fixed` to the viewport (not just trailing
           the last card) — nothing between this and Layout's <main> sets
           a transform/filter that would re-scope it. */}
       {activeProperty && (
-        <div className="fixed inset-x-0 bottom-40 z-30 border-t border-border bg-background">
+        <div className="fixed inset-x-0 bottom-[55px] z-30 border-t border-border bg-background">
           <div className="mx-auto max-w-2xl px-4 pt-2 pb-3">
             {showQuickLogIncome ? (
               <Card>
