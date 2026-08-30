@@ -64,6 +64,9 @@ const en = {
   "properties.noneForStatus": "No {status} properties.",
   "properties.loadError":
     "Couldn't load your properties. Try reloading the page.",
+  "properties.unitCount": "{count} units",
+  "properties.expandUnits": "Show units",
+  "properties.collapseUnits": "Hide units",
 
   "propertyForm.nameLabel": "Name",
   "propertyForm.addressLabel": "Address",
@@ -79,7 +82,6 @@ const en = {
   "buildings.unitNamePlaceholder": "e.g. 301",
   "buildings.promoteSaveButton": "Save",
   "buildings.promoteSavingButton": "Saving…",
-  "buildings.tabLabel": "Building",
   "buildings.buildingCosts": "Building costs",
   "buildings.unitsIncome": "Units income",
   "buildings.sharedBillsTitle": "Shared bills",
@@ -272,6 +274,9 @@ const es: Record<TranslationKey, string> = {
   "properties.noneForStatus": "No hay propiedades {status}.",
   "properties.loadError":
     "No se pudieron cargar tus propiedades. Intenta recargar la página.",
+  "properties.unitCount": "{count} unidades",
+  "properties.expandUnits": "Mostrar unidades",
+  "properties.collapseUnits": "Ocultar unidades",
 
   "propertyForm.nameLabel": "Nombre",
   "propertyForm.addressLabel": "Dirección",
@@ -287,7 +292,6 @@ const es: Record<TranslationKey, string> = {
   "buildings.unitNamePlaceholder": "ej. 301",
   "buildings.promoteSaveButton": "Guardar",
   "buildings.promoteSavingButton": "Guardando…",
-  "buildings.tabLabel": "Edificio",
   "buildings.buildingCosts": "Gastos del edificio",
   "buildings.unitsIncome": "Ingresos de las unidades",
   "buildings.sharedBillsTitle": "Cuentas compartidas",

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
-import { AlertCircle, ChevronLeft } from "lucide-react";
+import { AlertCircle, ChevronLeft, Pencil } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,9 +9,11 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "../i18n/useTranslation";
 import { BuildingSection } from "../features/buildings/BuildingSection";
 import { PromotePropertyForm } from "../features/buildings/PromotePropertyForm";
+import { RenameBuildingForm } from "../features/buildings/RenameBuildingForm";
 import {
   useBuildings,
   usePromotePropertyToBuilding,
+  useUpdateBuilding,
 } from "../features/buildings/hooks";
 import { ExpensesSection } from "../features/expenses/ExpensesSection";
 import { IncomeSection } from "../features/income/IncomeSection";
@@ -24,48 +26,60 @@ import {
   useUpdateProperty,
 } from "../features/properties/hooks";
 
-const BUILDING_TAB = "building";
-
 export function PropertyDetailPage() {
   const { t } = useTranslation();
-  const { propertyId } = useParams<{ propertyId: string }>();
+  const { propertyId, buildingId } = useParams<{
+    propertyId?: string;
+    buildingId?: string;
+  }>();
   const { data: properties, isPending, isError, error } = useProperties();
   const { data: buildings } = useBuildings();
   const updateProperty = useUpdateProperty();
   const setPropertyStatus = useSetPropertyStatus();
   const promotePropertyToBuilding = usePromotePropertyToBuilding();
+  const updateBuilding = useUpdateBuilding();
   const [isEditing, setIsEditing] = useState(false);
   const [showAddUnitForm, setShowAddUnitForm] = useState(false);
-  const [selectedTab, setSelectedTab] = useState(propertyId);
+  const [showRenameBuildingForm, setShowRenameBuildingForm] = useState(false);
+  // null = the building overview (only reachable via the /buildings/:id
+  // route — the old /properties/:id route always lands directly on that
+  // unit's own tab, unchanged from before this issue).
+  const [selectedUnitId, setSelectedUnitId] = useState<string | null>(
+    buildingId ? null : (propertyId ?? null),
+  );
 
-  // Local tab selection would otherwise persist across a URL param change
-  // (this route component doesn't remount when :propertyId changes) —
-  // reset it so arriving at a different unit's URL lands on that unit's
-  // own tab, not whichever tab was last selected.
+  // Local selection would otherwise persist across a URL param change
+  // (this route component doesn't remount when the param changes) —
+  // reset it so arriving at a different URL lands on the right state.
   useEffect(() => {
-    setSelectedTab(propertyId);
-  }, [propertyId]);
+    setSelectedUnitId(buildingId ? null : (propertyId ?? null));
+  }, [propertyId, buildingId]);
 
-  if (!propertyId) {
+  if (!propertyId && !buildingId) {
     return <Navigate to="/properties" replace />;
   }
 
-  const property = properties?.find((p) => p.propertyId === propertyId);
+  const property = propertyId
+    ? properties?.find((p) => p.propertyId === propertyId)
+    : undefined;
+  const resolvedBuildingId = buildingId ?? property?.buildingId;
 
-  // Every sibling sharing this property's buildingId, including itself.
-  // The tab bar only renders once this is 2+ — a promoted property always
-  // has a sibling by construction, so this only ever collapses back to
-  // flat for a genuinely standalone property (Requirement 8).
-  const siblings = property?.buildingId
-    ? (properties ?? []).filter((p) => p.buildingId === property.buildingId)
+  // Every unit sharing this buildingId. The tab bar only renders once this
+  // is 2+ — a promoted property always has a sibling by construction, so
+  // this only ever collapses back to flat for a genuinely standalone
+  // property (Requirement 8, issue #7).
+  const siblings = resolvedBuildingId
+    ? (properties ?? []).filter((p) => p.buildingId === resolvedBuildingId)
     : [];
   const isMultiUnit = siblings.length >= 2;
   const building = isMultiUnit
-    ? buildings?.find((b) => b.buildingId === property?.buildingId)
+    ? buildings?.find((b) => b.buildingId === resolvedBuildingId)
     : undefined;
 
   const activeProperty = isMultiUnit
-    ? siblings.find((p) => p.propertyId === selectedTab)
+    ? selectedUnitId
+      ? siblings.find((p) => p.propertyId === selectedUnitId)
+      : undefined
     : property;
 
   return (
@@ -91,26 +105,64 @@ export function PropertyDetailPage() {
         </Alert>
       )}
 
-      {!isPending && !isError && !property && (
+      {!isPending && !isError && propertyId && !property && (
+        <Navigate to="/properties" replace />
+      )}
+      {!isPending && !isError && buildingId && !isMultiUnit && (
         <Navigate to="/properties" replace />
       )}
 
-      {isMultiUnit && (
-        <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-          <TabsList>
-            <TabsTrigger value={BUILDING_TAB}>
-              {t("buildings.tabLabel")}
-            </TabsTrigger>
-            {siblings.map((unit) => (
-              <TabsTrigger key={unit.propertyId} value={unit.propertyId}>
-                {unit.name}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
+      {isMultiUnit && building && (
+        <div className="flex flex-col gap-3">
+          <div className="sticky top-0 z-10 -mx-4 flex items-center justify-between gap-2 bg-background px-4 py-2">
+            <button
+              type="button"
+              onClick={() => setSelectedUnitId(null)}
+              className="text-left"
+            >
+              <h1 className="text-xl font-medium">{building.name}</h1>
+            </button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={t("common.edit")}
+              onClick={() => setShowRenameBuildingForm(true)}
+            >
+              <Pencil className="size-4" />
+            </Button>
+          </div>
+
+          {showRenameBuildingForm && (
+            <Card>
+              <CardContent>
+                <RenameBuildingForm
+                  initialName={building.name}
+                  isSubmitting={updateBuilding.isPending}
+                  onSubmit={(name) => {
+                    updateBuilding.mutate(
+                      { ...building, name },
+                      { onSuccess: () => setShowRenameBuildingForm(false) },
+                    );
+                  }}
+                  onCancel={() => setShowRenameBuildingForm(false)}
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          <Tabs value={selectedUnitId ?? ""} onValueChange={setSelectedUnitId}>
+            <TabsList>
+              {siblings.map((unit) => (
+                <TabsTrigger key={unit.propertyId} value={unit.propertyId}>
+                  {unit.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
       )}
 
-      {isMultiUnit && selectedTab === BUILDING_TAB ? (
+      {isMultiUnit && selectedUnitId === null ? (
         building && (
           <BuildingSection
             building={building}

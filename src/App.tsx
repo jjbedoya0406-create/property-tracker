@@ -47,6 +47,10 @@ function App() {
                   path="properties/:propertyId"
                   element={<PropertyDetailPage />}
                 />
+                <Route
+                  path="buildings/:buildingId"
+                  element={<PropertyDetailPage />}
+                />
                 <Route path="capture" element={<CapturePage />} />
                 <Route path="categories" element={<CategoriesListPage />} />
                 <Route path="settings" element={<SettingsPage />} />

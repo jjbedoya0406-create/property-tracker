@@ -5,6 +5,7 @@ import {
   addUnitToBuilding,
   listBuildings,
   promotePropertyToBuilding,
+  updateBuilding,
   type PromotePropertyToBuildingInput,
 } from "../../data/buildings";
 import { useSpreadsheetId } from "../../portfolio/context";
@@ -39,6 +40,20 @@ export function usePromotePropertyToBuilding() {
     mutationFn: (input: PromotePropertyToBuildingInput) =>
       promotePropertyToBuilding(accessToken, spreadsheetId, input),
     onSuccess: invalidate,
+  });
+}
+
+export function useUpdateBuilding() {
+  const accessToken = useRequiredAccessToken();
+  const spreadsheetId = useSpreadsheetId();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (building: Building) =>
+      updateBuilding(accessToken, spreadsheetId, building),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.buildings.all });
+    },
   });
 }
 

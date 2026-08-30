@@ -1,5 +1,5 @@
 import { createFolder, moveFile } from "../api/drive/client";
-import { appendValues, getValues } from "../api/sheets/client";
+import { appendValues, getValues, updateValues } from "../api/sheets/client";
 import type { Building, Property } from "../types";
 import { createProperty, updateProperty } from "./properties";
 import { ensureReceiptsFolder } from "./receipts";
@@ -40,6 +40,41 @@ export async function listBuildings(
   return (values ?? [])
     .filter((row) => Array.isArray(row) && row[0])
     .map(rowToBuilding);
+}
+
+// Sheets edits target a row number, not an ID, so every write first locates
+// the building's current row — same tradeoff as properties.ts/categories.ts.
+async function findBuildingRowNumber(
+  accessToken: string,
+  spreadsheetId: string,
+  buildingId: string,
+): Promise<number> {
+  const { values } = await getValues(accessToken, spreadsheetId, DATA_RANGE);
+  const index = (values ?? []).findIndex((row) => row[0] === buildingId);
+  if (index === -1) {
+    throw new Error(`Building ${buildingId} not found`);
+  }
+  return index + 2; // +1 for 1-indexing, +1 for the header row
+}
+
+// Only ever used to rename a building for now (issue #12) — other fields
+// (address, drive_folder_id) aren't user-editable today.
+export async function updateBuilding(
+  accessToken: string,
+  spreadsheetId: string,
+  building: Building,
+): Promise<void> {
+  const rowNumber = await findBuildingRowNumber(
+    accessToken,
+    spreadsheetId,
+    building.buildingId,
+  );
+  await updateValues(
+    accessToken,
+    spreadsheetId,
+    `${SHEET_NAME}!A${rowNumber}:E${rowNumber}`,
+    [buildingToRow(building)],
+  );
 }
 
 async function createBuildingRow(
