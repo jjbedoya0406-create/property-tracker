@@ -5,7 +5,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "../i18n/useTranslation";
 import { BuildingSection } from "../features/buildings/BuildingSection";
@@ -97,12 +96,22 @@ export function PropertyDetailPage() {
     : undefined;
   const resolvedBuildingId = buildingId ?? property?.buildingId;
 
-  // Every unit sharing this buildingId. The tab bar only renders once this
-  // is 2+ — a promoted property always has a sibling by construction, so
-  // this only ever collapses back to flat for a genuinely standalone
-  // property (Requirement 8, issue #7).
+  // Every unit sharing this buildingId. The selector only renders once
+  // this is 2+ — a promoted property always has a sibling by construction,
+  // so this only ever collapses back to flat for a genuinely standalone
+  // property (Requirement 8, issue #7). Sorted numeric-aware (issue #16)
+  // so "301, 302, 303, 304" reads in order rather than sheet-insertion
+  // order — unit names aren't always pure numbers (e.g. "Jess house"),
+  // so this falls back to plain alphabetic comparison for those.
   const siblings = resolvedBuildingId
-    ? (properties ?? []).filter((p) => p.buildingId === resolvedBuildingId)
+    ? (properties ?? [])
+        .filter((p) => p.buildingId === resolvedBuildingId)
+        .sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, {
+            numeric: true,
+            sensitivity: "base",
+          }),
+        )
     : [];
   const isMultiUnit = siblings.length >= 2;
   const building = isMultiUnit
@@ -205,15 +214,32 @@ export function PropertyDetailPage() {
             </Card>
           )}
 
-          <Tabs value={selectedUnitId ?? ""} onValueChange={setSelectedUnitId}>
-            <TabsList>
-              {siblings.map((unit) => (
-                <TabsTrigger key={unit.propertyId} value={unit.propertyId}>
+          {/* Grid, not a horizontal tab strip (issue #16) — every unit stays
+              visible without a swipe gesture, wrapping to more rows instead
+              of scrolling. Selected/unselected contrast is deliberately
+              stark (solid fill vs. plain border) rather than the previous
+              subtle-background pill treatment, which blended units together
+              once a building had more than a couple of units. */}
+          <div className="grid grid-cols-4 gap-2">
+            {siblings.map((unit) => {
+              const isSelected = selectedUnitId === unit.propertyId;
+              return (
+                <button
+                  key={unit.propertyId}
+                  type="button"
+                  onClick={() => setSelectedUnitId(unit.propertyId)}
+                  className={cn(
+                    "min-h-11 rounded-lg border-[0.5px] px-2 py-2 text-center text-sm font-medium break-words",
+                    isSelected
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-transparent text-foreground",
+                  )}
+                >
                   {unit.name}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 

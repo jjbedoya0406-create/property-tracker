@@ -20,7 +20,12 @@ function rowToProperty(row: unknown[]): Property {
   ] = row as string[];
   return {
     propertyId,
-    name,
+    // A purely-numeric unit name (e.g. "301") comes back from the Sheets
+    // API as a JS number, not a string, despite the `as string[]` above —
+    // that assertion is a type-level lie, not a runtime cast. Coerced
+    // explicitly here since callers (e.g. the unit-selector sort, issue
+    // #16) rely on this actually being a string.
+    name: String(name ?? ""),
     address: address || undefined,
     status: status === "archived" ? "archived" : "active",
     createdAt,
